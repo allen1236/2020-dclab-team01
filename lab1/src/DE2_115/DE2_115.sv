@@ -164,7 +164,7 @@ Top top0(
 	.i_clk(CLOCK_50),
 	.i_rst_n(KEY[1]),
 	.i_start(keydown0),
-	.i_prev(keydown2)
+	.i_prev(keydown2),
 	.i_next(keydown3),
 	.o_random_out(random_value)
 );

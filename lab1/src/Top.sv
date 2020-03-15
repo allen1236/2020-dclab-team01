@@ -32,7 +32,10 @@ logic [3:0] mem_r[3:0], mem_w[3:0];
 // ===== Output Assignments =====
 assign o_random_out = o_random_out_r;
 initial o_random_out_r = 4'd0;
-initial mem_r = 0;
+initial mem_r[0] = 0;
+initial mem_r[1] = 0;
+initial mem_r[2] = 0;
+initial mem_r[3] = 0;
 
 // ===== Combinational Circuits =====
 always_comb begin
@@ -55,27 +58,27 @@ always_comb begin
 			counter_w	= 48'd0;
 			seed_w 		= counter_r[INDEX_MAX:INDEX_MAX-7] * 2 + 16'd1;
 			state_w		= S_RAND;
+			mem_w[1] = mem_r[0];
+			mem_w[2] = mem_r[1];
+			mem_w[3] = mem_r[2];
 		end
 		if (i_prev) begin
 			ptr_w = ptr_r + 1;
-			o_random_out_w = mem_r[ptr_r + 1]
+			o_random_out_w = mem_r[ptr_r + 1];
 		end
 		else if (i_next) begin
 			ptr_w = ptr_r - 1;
-			o_random_out_w = mem_r[ptr_r - 1]
+			o_random_out_w = mem_r[ptr_r - 1];
 		end
 	end
 
 	S_RAND: begin
 		o_random_out_w	= (counter_r[index_r -: INDEX_LEN] == 0) ? (o_random_out_r * seed_r + SEED_B): o_random_out_w;
+		mem_w[0]		= (counter_r[index_r -: INDEX_LEN] == 0) ? (o_random_out_r * seed_r + SEED_B): o_random_out_w;
 		counter_w		= counter_r[INDEX_MAX] ? CLK_UNIT: counter_w;
 		index_w			= counter_r[INDEX_MAX] ? index_r + 1: index_r;
 		if ( index_r == (INDEX_MAX-1) || i_start ) begin
 			state_w  = S_IDLE;
-			mem_w[0] = o_random_out_r;
-			mem_w[1] = mem_r[0];
-			mem_w[2] = mem_r[1];
-			mem_w[3] = mem_r[2];
 			ptr_w	 = 0;
 		end
 	end
