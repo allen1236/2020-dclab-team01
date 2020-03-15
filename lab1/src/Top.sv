@@ -3,6 +3,7 @@ module Top (
 	input        i_rst_n,
 	input        i_start,
 	input 	     i_prev ,
+	input        i_next ,
 	output [3:0] o_random_out
 );
 
