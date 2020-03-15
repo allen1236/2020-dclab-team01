@@ -48,11 +48,10 @@ always_comb begin
 	counter_w 		= counter_r + CLK_UNIT;
 	seed_w			= seed_r;
 	index_w			= INDEX_MIN;
+	mem_w[3]		= mem_r[2];
+	mem_w[2]		= mem_r[1];
+	mem_w[1]		= mem_r[0];
 	state_w			= state_r;
-	mem_w[3]		= mem_r[3];
-	mem_w[2]		= mem_r[2];
-	mem_w[1]		= mem_r[1];
-	mem_w[0]		= mem_r[0];
 
 	case(state_r)
 
@@ -61,14 +60,19 @@ always_comb begin
 			counter_w	= 48'd0;
 			mem_w[0] 	= counter_r[12:9];
 			state_w		= S_RAND;
-			mem_w[3]		= mem_r[2];
-			mem_w[2]		= mem_r[1];
-			mem_w[1]		= mem_r[0];
+		end
+		else begin
+			mem_w[3]		= mem_r[3];
+			mem_w[2]		= mem_r[2];
+			mem_w[1]		= mem_r[1];
+			mem_w[0] 		= mem_r[0];
 		end
 	end
 
 	S_RAND: begin
-
+		mem_w[3]		= mem_r[3];
+		mem_w[2]		= mem_r[2];
+		mem_w[1]		= mem_r[1];
 		mem_w[0]		= (counter_r[index_r -: INDEX_LEN] == 0) ? (mem_r[0] * SEED_A + SEED_B): mem_w[0];
 		counter_w		= counter_r[INDEX_MAX] ? CLK_UNIT: counter_w;
 		index_w			= counter_r[INDEX_MAX] ? index_r + 1: index_r;
@@ -76,7 +80,6 @@ always_comb begin
 	end
 
 	endcase
-
 end
 
 // ===== Sequential Circuits =====
