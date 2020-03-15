@@ -166,7 +166,7 @@ Top top0(
 	.i_start(keydown0),
 	.i_prev(keydown2),
 	.i_next(keydown3),
-	.o_random_out1(random_value1)
+	.o_random_out1(random_value1),
 	.o_random_out2(random_value2)
 );
 
