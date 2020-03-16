@@ -24,6 +24,7 @@ parameter SEED_A = 22695477;
 parameter INDEX_LEN = 8'd13;		// MAX
 parameter INDEX_MAX = 8'd21;		// MAX(23) + 8
 parameter INDEX_MIN = 8'd17;		// MIN(19) + 8
+// clk unit havs better implementation
 parameter CLK_UNIT= 48'd64;
 parameter MEM_MAX = 15;
 
