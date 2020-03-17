@@ -1,3 +1,4 @@
+set_global_assignment -name TOP_LEVEL_ENTITY DE2_115
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK2_50
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK3_50
@@ -457,8 +458,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[3]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[6]
-set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
-set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 set_location_assignment PIN_A17 -to ENET0_GTX_CLK
 set_location_assignment PIN_A21 -to ENET0_INT_N
@@ -1050,3 +1049,7 @@ set_instance_assignment -name IO_MAXIMUM_TOGGLE_RATE "0 MHz" -to HEX7
 set_instance_assignment -name IO_MAXIMUM_TOGGLE_RATE "0 MHz" -to KEY
 set_instance_assignment -name IO_MAXIMUM_TOGGLE_RATE "0 MHz" -to SW
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name DEVICE auto
+set_global_assignment -name FAMILY "Cyclone IV E"

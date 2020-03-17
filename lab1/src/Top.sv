@@ -2,8 +2,8 @@ module Top (
 	input        i_clk,
 	input        i_start,
 	input        i_rst_n,
-	input		 i_prev,
 	input		 i_next,
+	input		 i_prev,
 	output [3:0] o_random_out1,
 	output [3:0] o_random_out2,
 	output [3:0] o_random_out3,
@@ -18,12 +18,12 @@ parameter S_RAND = 1'd1;
 // ===== Constants =====
 parameter SEED_B = 1;
 parameter SEED_A = 22695477;
-//parameter INDEX_LEN = 8'd23;		// MAX
-//parameter INDEX_MAX = 8'd31;		// MAX(23) + 8
-//parameter INDEX_MIN = 8'd27;		// MIN(19) + 8
-parameter INDEX_LEN = 8'd11;		// MAX
-parameter INDEX_MAX = 8'd19;		// MAX(23) + 8
-parameter INDEX_MIN = 8'd15;		// MIN(19) + 8
+parameter INDEX_LEN = 8'd23;		// MAX
+parameter INDEX_MAX = 8'd31;		// MAX(23) + 8
+parameter INDEX_MIN = 8'd26;		// MIN(19) + 8
+//parameter INDEX_LEN = 8'd11;		// MAX
+//parameter INDEX_MAX = 8'd19;		// MAX(23) + 8
+//parameter INDEX_MIN = 8'd15;		// MIN(19) + 8
 // clk unit havs better implementation
 parameter CLK_UNIT= 48'd64;
 parameter MEM_MAX = 63;
