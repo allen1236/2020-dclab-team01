@@ -9,4 +9,22 @@ module Montgomery{
 	output			o_finish
 };
 
+/*========== States ==========*/
+
+/*========== Parameters ==========*/
+
+/*========== Output Buffers ==========*/
+
+/*========== Variables ==========*/
+
+/*========== Output Assignments ==========*/
+
+/*========== Compinational Circuits ==========*/
+always_comb begin
+end
+
+/*========== Sequential Circuits ==========*/
+always_ff @(posedge i_clk or negedge i_rst_n) begin
+end
+
 endmodule
