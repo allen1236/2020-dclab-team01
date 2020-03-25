@@ -68,20 +68,21 @@ end
 /*========== Sequential Circuits ==========*/
 always_ff @(posedge i_clk or posedge i_rst) begin
 
-if(i_rst) begin
-	counter_r  <= 0;
-	state_r    <= S_IDLE;
-	mult_r     <= 0;
-	o_result_r <= 0;
-	o_finish_r <= 0;
-end
-else begin
-	counter_r  <= counter_w;
-	state_r    <= state_w;
-	mult_r     <= mult_w;
-	o_result_r <= o_result_w;
-	o_finish_r <= o_finish_w;
+	if(i_rst) begin
+		counter_r  <= 0;
+		state_r    <= S_IDLE;
+		mult_r     <= 0;
+		o_result_r <= 0;
+		o_finish_r <= 0;
+	end
+	else begin
+		counter_r  <= counter_w;
+		state_r    <= state_w;
+		mult_r     <= mult_w;
+		o_result_r <= o_result_w;
+		o_finish_r <= o_finish_w;
 
+	end
 end
 
 endmodule
