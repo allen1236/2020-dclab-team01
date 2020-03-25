@@ -26,21 +26,26 @@ logic [255:0]	text_r, text_w;
 
 
 
-
-
-
-
-
-
-
-
 /*============this is for test only Modulo product==============*/
+
+ModuloProduct test(
+	.i_clk(i_clk),
+	.i_rst(i_rst),
+	.i_start(i_start),
+	.i_n(i_n),
+	.i_a(i_a),
+	.i_b(i_d),
+	.o_result(o_a_pow_d),
+	.o_finish(o_finished)
+); // a*d mod n
+
+
 /*========== Compinational Circuits ==========*/
 always_comb begin
 end
 
 /*========== Sequential Circuits ==========*/
-always_ff @(posedge i_clk or negedge i_rst_n) begin
+always_ff @(posedge i_clk or posedge i_rst) begin
 end
 
 endmodule
