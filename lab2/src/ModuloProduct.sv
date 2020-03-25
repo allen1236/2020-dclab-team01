@@ -17,7 +17,7 @@ parameter [6:0] K = 7'd255;
 
 /*========== Output Buffers ==========*/
 logic[255:0] o_result_w, o_result_r;
-logic 		 o_finish_w, o_finish_w;
+logic 		 o_finish_w, o_finish_r;
 
 /*========== Variables ==========*/
 logic [1:0] state_w, state_r;
