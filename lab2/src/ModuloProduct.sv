@@ -1,4 +1,4 @@
-module ModuloProduct{
+module ModuloProduct(
 	input			i_clk,
 	input			i_rst,
 	input			i_start,
@@ -7,7 +7,7 @@ module ModuloProduct{
 	input [255:0]	i_b,
 	output [255:0]	o_result,
 	output			o_finish
-};
+);
 
 /*========== States ==========*/
 parameter S_IDLE = 1'd0;
@@ -42,7 +42,7 @@ always_comb begin
 	S_IDLE: begin
 		counter_w = 7'd0;
 		if(i_start) begin
-			sate_w = S_CALC;
+			state_w = S_CALC;
 			mult_w = i_b;
 			o_result_w = 1'd0;
 		end
