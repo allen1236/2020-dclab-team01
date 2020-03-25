@@ -27,6 +27,7 @@ logic [255:0]	text_r, text_w;
 
 /*========== Compinational Circuits ==========*/
 always_comb begin
+
 end
 
 /*========== Sequential Circuits ==========*/

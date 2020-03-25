@@ -10,9 +10,9 @@ module Montgomery{
 };
 
 /*========== States ==========*/
-parameter S_IDLE = 2'd0;
-parameter S_CALC = 2'd1;
-parameter S_MINU = 2'd1;
+parameter S_IDLE = 2'd0;			// idle (o_finish == 1)
+parameter S_LOOP = 2'd1;			// for loop (add b to m according to each bit of a)
+parameter S_COMP = 2'd2;			// if m > n, subtract n from m
 
 /*========== Parameters ==========*/
 
@@ -44,14 +44,14 @@ always_comb begin
 				m_w			= 0;
 			end
 		end
-		S_CALC: begin
+		S_LOOP: begin
 			if ( i_a[index_r] ) begin 
 				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + N) >> 1 : (m_r + i_b) >> 1;
 			end
 			index_w		= index_r + 1;
 			state_w		= ( index_r == 8'd255 ) ? S_MINU : state_w;
 		end
-		S_MINU: begin
+		S_COMP: begin
 			m_w = ( m_r > i_n )  ? m_r - i_n : m_w;
 			state_w  = S_IDLE;
 			finsi_w = 1'd1;
