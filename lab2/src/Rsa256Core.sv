@@ -8,7 +8,6 @@ module Rsa256Core (
 	output [255:0] o_a_pow_d, // plain text x
 	output         o_finished
 );
-
 /*========== States ==========*/
 parameter S_IDLE = 2'd0;
 parameter S_PREP = 2'd1;
@@ -25,6 +24,17 @@ logic [255:0]	text_r, text_w;
 
 /*========== Output Assignments ==========*/
 
+
+
+
+
+
+
+
+
+
+
+/*============this is for test only Modulo product==============*/
 /*========== Compinational Circuits ==========*/
 always_comb begin
 end
