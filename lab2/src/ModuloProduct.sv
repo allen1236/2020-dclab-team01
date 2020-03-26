@@ -25,7 +25,7 @@ logic [7:0] counter_w, counter_r;
 logic [255:0] mult_w, mult_r;
 
 /*========== Output Assignments ==========*/
-assign o_result = o_result_r;
+assign o_result = (o_finish_r==1) ? o_result_r : 0;
 assign o_finish = o_finish_r;
 
 /*========== Compinational Circuits ==========*/
