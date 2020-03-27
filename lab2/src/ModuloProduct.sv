@@ -13,7 +13,7 @@ module ModuloProduct(
 parameter S_IDLE = 1'd0;
 parameter S_CALC = 1'd1;
 /*========== Parameters ==========*/
-parameter [6:0] K = 7'd255;
+parameter [7:0] K = 8'd255;
 
 /*========== Output Buffers ==========*/
 logic[255:0] o_result_w, o_result_r;
@@ -21,11 +21,11 @@ logic 		 o_finish_w, o_finish_r;
 
 /*========== Variables ==========*/
 logic [1:0] state_w, state_r;
-logic [6:0] counter_w, counter_r;
+logic [7:0] counter_w, counter_r;
 logic [255:0] mult_w, mult_r;
 
 /*========== Output Assignments ==========*/
-assign o_result = o_result_r;
+assign o_result = (o_finish_r==1) ? o_result_r : 0;
 assign o_finish = o_finish_r;
 
 /*========== Compinational Circuits ==========*/
@@ -40,7 +40,7 @@ always_comb begin
 	case(state_r)
 
 	S_IDLE: begin
-		counter_w = 7'd0;
+		counter_w = 8'd0;
 		if(i_start) begin
 			state_w = S_CALC;
 			mult_w = i_b;
