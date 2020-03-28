@@ -5,5 +5,5 @@ novas.rc
 lab1/sim/
 *.bak
 *.log
-lab2/src/INCA_libs/
-lab2/src/lab2.fsdb
+*INCA_libs
+*.fsdb

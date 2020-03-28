@@ -7,7 +7,7 @@ module tb;
 	logic clk, start_cal, fin, rst;
 	initial clk = 0;
 	always #HCLK clk = ~clk;
-	logic [255:0] a, b, n, r;
+	logic [255:0] r;
 	logic [247:0] golden;
 	integer fp_e, fp_d;
 
@@ -15,9 +15,9 @@ module tb;
 		.i_clk(clk),
 		.i_rst(rst),
 		.i_start(start_cal),
-		.i_n(256'd72),
-		.i_a(256'd5),
-		.i_b(256'd32), // 29 * 2^256
+		.i_n(256'd91),
+		.i_a(256'd1),
+		.i_b(256'd16), // 1 * 2^256 mod 91
 		.o_result(r),
 		.o_finish(fin)
 	);
@@ -36,7 +36,7 @@ module tb;
 		start_cal <= 0;
 		@(posedge fin)
 		$display("=========");
-		$display("result: %d (answer: %d)", r, 1);
+		$display("%64d", r);
 		$display("=========");
 		$finish;
 	end

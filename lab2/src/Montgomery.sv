@@ -1,4 +1,4 @@
-module Montgomery{
+module Montgomery(
 	input			i_clk,
 	input			i_rst,
 	input			i_start,
@@ -7,7 +7,7 @@ module Montgomery{
 	input [255:0]	i_b,
 	output [255:0]	o_result,
 	output			o_finish
-};
+);
 
 /*========== States ==========*/
 parameter S_IDLE = 2'd0;			// idle (o_finish == 1)
@@ -35,10 +35,10 @@ always_comb begin
 	index_w		= index_r;
 	m_w			= m_r;
 
-	case( state_r ):
+	case( state_r )
 		S_IDLE: begin
 			if ( i_start ) begin
-				state_w		= S_CALC;
+				state_w		= S_LOOP;
 				finish_w	= 0;
 				index_w		= 0;
 				m_w			= 0;
@@ -46,15 +46,17 @@ always_comb begin
 		end
 		S_LOOP: begin
 			if ( i_a[index_r] ) begin 
-				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + N) >> 1 : (m_r + i_b) >> 1;
+				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + i_n) / 2 : (m_r + i_b) / 2;
+			end else begin
+				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_n) / 2 : m_r / 2;
 			end
 			index_w		= index_r + 1;
-			state_w		= ( index_r == 8'd255 ) ? S_MINU : state_w;
+			state_w		= ( index_r == 8'd255 ) ? S_COMP : state_w;
 		end
 		S_COMP: begin
-			m_w = ( m_r > i_n )  ? m_r - i_n : m_w;
+			m_w = ( m_r >= i_n ) ? m_r - i_n : m_w;
 			state_w  = S_IDLE;
-			finsi_w = 1'd1;
+			finish_w = 1'd1;
 		end
 	endcase
 end
@@ -67,7 +69,7 @@ always_ff @(posedge i_clk or posedge i_rst) begin
 		index_r			<= 0;
 		m_r				<= 0;
 	end
-	else
+	else begin
 		state_r			<= state_w;
 		finish_r		<= finish_w;
 		index_r			<= index_w;
