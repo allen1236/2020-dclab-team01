@@ -16,8 +16,8 @@ module tb;
 		.i_rst(rst),
 		.i_start(start_cal),
 		.i_n(256'd91),
-		.i_a(256'd1),
-		.i_b(256'd1),
+		.i_a(256'b1<<25),
+		.i_b(257'b1<<256),
 		.o_result(r),
 		.o_finish(fin)
 	);

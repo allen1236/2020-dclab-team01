@@ -46,9 +46,9 @@ always_comb begin
 		end
 		S_LOOP: begin
 			if ( i_a[index_r] ) begin 
-				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + i_n) / 2 : (m_r + i_b) / 2;
+				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + i_n) >> 1 : (m_r + i_b) >> 1;
 			end else begin
-				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_n) / 2 : m_r / 2;
+				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_n) >> 1 : m_r >> 1;
 			end
 			index_w		= index_r + 1;
 			state_w		= ( index_r == 8'd255 ) ? S_COMP : state_w;
@@ -65,7 +65,7 @@ end
 always_ff @(posedge i_clk or posedge i_rst) begin
 	if ( i_rst  ) begin
 		state_r			<= S_IDLE;
-		finish_r		<= 1;
+		finish_r		<= 0;
 		index_r			<= 0;
 		m_r				<= 0;
 	end
