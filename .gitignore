@@ -7,4 +7,3 @@ lab1/sim/
 *.log
 lab2/src/INCA_libs/
 lab2/src/lab2.fsdb
-lab2/src/tb_verilog/

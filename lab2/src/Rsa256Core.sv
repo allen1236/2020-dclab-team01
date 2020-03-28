@@ -30,6 +30,7 @@ logic [255:0]	o_a_pow_d_r, o_a_pow_d_w;
 /*========== Output Assignments ==========*/
 assign o_finished = o_finished_r;
 assign o_a_pow_d = o_a_pow_d_r;
+
 /*========== Compinational Circuits ==========*/
 assign m_in = m_r;
 assign t_in = t_r;
