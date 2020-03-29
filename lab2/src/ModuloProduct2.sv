@@ -8,15 +8,12 @@ module ModuloProduct(
 	output [256:0]	o_result,
 	output			o_finish
 );
-integer fp_w;
-initial begin
-	fp_w = $fopen("product.txt", "w");
-end
+
 /*========== States ==========*/
 parameter S_IDLE = 1'd0;
 parameter S_CALC = 1'd1;
 /*========== Parameters ==========*/
-parameter [7:0] K = 8'd255;
+parameter [7:0] K = 8'd256;
 
 /*========== Output Buffers ==========*/
 logic[256:0] o_result_w, o_result_r;
@@ -24,9 +21,9 @@ logic 		 o_finish_w, o_finish_r;
 
 /*========== Variables ==========*/
 logic [1:0] state_w, state_r;
-logic [8:0] counter_w, counter_r;
+logic [7:0] counter_w, counter_r;
 logic [257:0] mult_w, mult_r;
-logic [256:0] i_a_w, i_a_r;
+logic [256:0] i_b_w, i_b_r;
 logic [256:0] i_n_w, i_n_r;
 
 /*========== Output Assignments ==========*/
@@ -41,7 +38,7 @@ always_comb begin
 	state_w    = state_r;
 	mult_w     = mult_r;
 	counter_w  = counter_r;
-	i_a_w      = i_a_r;
+	i_b_w      = i_b_r;
 	i_n_w      = i_n_r;
 
 	case(state_r)
@@ -50,33 +47,26 @@ always_comb begin
 		counter_w = 8'd0;
 		if(i_start) begin
 			state_w = S_CALC;
-			i_a_w = i_a;
+			i_b_w = i_b;
 			i_n_w = i_n;
-			mult_w = i_b%i_n;
+			mult_w = i_a%i_n;
 			o_result_w = 1'd0;
+            $display("%x",i_b_w);
 		end
 	end
 
 	S_CALC: begin
 		counter_w = counter_r + 1;
-		if( counter_r > K) begin
+		if( counter_r == K) begin
 			state_w = S_IDLE;
 			o_finish_w = 1'd1;
 		end
 		else begin
-			if( i_a_r[counter_r]==1 ) begin
-				o_result_w = ( (o_result_r+mult_r) >= i_n_r) ? o_result_r+mult_r-i_n_r : o_result_r+mult_r;
+			if( i_b_r[counter_r]==1 ) begin
+				o_result_w = ( o_result_r+mult_r >= i_n_r) ? o_result_r+mult_r-i_n_r : o_result_r+mult_r;
 			end
 		end
-		/*
-		$display(mult_w);
-		$fwrite(fp_w, mult_w);
 		mult_w = (mult_r+mult_r > i_n_r) ? ((mult_r+mult_r)-i_n_r) : mult_r<<1;
-		$display(mult_w);
-		$fwrite(fp_w, mult_w);
-		$display("result = ",o_result_w);
-		$fwrite(fp_w,"result = %d" , mult_w);
-		*/
 	end
 	endcase
 	
@@ -91,8 +81,7 @@ always_ff @(posedge i_clk or posedge i_rst) begin
 		mult_r     <= 0;
 		o_result_r <= 0;
 		o_finish_r <= 0;
-		i_a_r      <= 0;
-		i_n_r      <= 0;
+		i_b_r      <= 0;
 	end
 	else begin
 		counter_r  <= counter_w;
@@ -100,8 +89,16 @@ always_ff @(posedge i_clk or posedge i_rst) begin
 		mult_r     <= mult_w;
 		o_result_r <= o_result_w;
 		o_finish_r <= o_finish_w;
-		i_a_r      <= i_a_w;
+		i_b_r      <= i_b_w;
 		i_n_r      <= i_n_w;
+        $display("===========================");
+        $display(mult_r);
+		$display(mult_w);
+        $display(o_result);
+        $display(counter_r);
+        $display(o_finish_w);
+        $display(i_b_r[counter_r]);
+        $display("===========================");
 	end
 end
 

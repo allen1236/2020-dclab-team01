@@ -16,25 +16,29 @@ parameter S_CALC = 2'd3;
 
 /*========== Parameters ==========*/
 parameter STEP = 256;
-parameter basis = (257'b1 << 256);
+parameter BASIS = (257'b1 << 256);
 /*========== Output Buffers ==========*/
 
 /*========== Variables ==========*/
+logic [255:0]	i_a_r, i_a_w, i_a_in;
+logic [255:0]	i_d_r, i_d_w;
+logic [255:0]	i_n_r, i_n_w, i_n_in;
+
 logic [1:0]		state_r, state_w;
-logic [255:0]	m_r, m_w, m_in;
+logic [255:0]	t_r, t_w, t_in, t_out;
+logic [255:0]	m_r, m_w, m_in, m_out;
 logic [32:0]	cnt_r, cnt_w;
-logic [255:0]	t_r, t_w, t_in;
 logic [256:0]	y_256;
+
+logic prep_done, m_done, t_done;
+
+logic mont_rst, mont_rst_r, mont_rst_w;
+logic mont_start, mont_start_r, mont_start_w;
+logic MP_rst, MP_rst_r, MP_rst_w;
+logic MP_start, MP_start_r, MP_start_w;
+
 logic [255:0]	o_a_pow_d_r, o_a_pow_d_w;
 logic o_finished_r, o_finished_w;
-logic prep_done;
-logic m_done;
-logic mt_done;
-logic m_rst, m_rst_reg;
-logic t_rst, t_rst_reg;
-
-
-logic [32:0] bug_r, bug_w;
 
 /*========== Output Assignments ==========*/
 assign o_finished = o_finished_r;
@@ -42,24 +46,31 @@ assign o_a_pow_d = o_a_pow_d_r;
 /*========== Compinational Circuits ==========*/
 assign m_in = m_r;
 assign t_in = t_r;
-assign m_rst = m_rst_reg;
-assign t_rst = t_rst_reg;
+
+assign i_n_in = i_n_r;
+assign i_a_in = i_a_r;
+
+assign MP_rst = MP_rst_r;
+assign mont_rst = mont_rst_r;
+
+assign MP_start = MP_start_r;
+assign mont_start = mont_start_r;
 
 ModuloProduct MP1(.i_clk(i_clk), 
-				.i_rst(i_rst), 
-				.i_start(i_start), 
-				.i_n(i_n), 
-				.i_a(i_a), 
-				.i_b(basis), 
+				.i_rst(i_rst || MP_rst), 
+				.i_start(MP_start), 
+				.i_n(i_n_in), 
+				.i_a(i_a_in), 
+				.i_b(BASIS), 
 				.o_result(y_256), /*y under basis 2^256*/
 				.o_finish(prep_done)
 				);
 	
 Montgomery m_change(
 					.i_clk(i_clk),
-					.i_rst(i_rst || m_rst),
-					.i_start(i_start),
-					.i_n(i_n),
+					.i_rst(i_rst || mont_rst),
+					.i_start(mont_start),
+					.i_n(i_n_in),
 					.i_a(m_in),
 					.i_b(t_in),
 					.o_result(m_out),
@@ -68,37 +79,46 @@ Montgomery m_change(
 
 Montgomery t_trans_256(
 					.i_clk(i_clk),
-					.i_rst(i_rst || t_rst),
-					.i_start(i_start),
-					.i_n(i_n),
+					.i_rst(i_rst || mont_rst),
+					.i_start(mont_start),
+					.i_n(i_n_in),
 					.i_a(t_in), /*t in the slide*/
 					.i_b(t_in), /*t in the slide*/
 					.o_result(t_out),
-					.o_finish(mt_done)
+					.o_finish(t_done)
 					);
 
 always_comb begin
+
+state_w = state_r;
 cnt_w = cnt_r;
+i_a_w = i_a_r;
+i_d_w = i_d_r;
+i_n_w = i_n_r;
 m_w = m_r;
 t_w = t_r;
 o_a_pow_d_w = o_a_pow_d_r;
 o_finished_w = o_finished_r;
-
-bug_w = bug_r + 1;
-
-m_rst_reg = 1;
-t_rst_reg = 1;
+mont_start_w = 0;
+mont_rst_w = 1;
+MP_start_w = 0;
+MP_rst_w = 1;
 
 case(state_r)
 
 S_IDLE:begin
+	cnt_w = 0;
+	m_w = 1;
+	t_w = 0;
+	o_finished_w = 0;
+	o_a_pow_d_w = 0;
 	if (i_start) begin
 		state_w = S_PREP;
-		bug_w = 1;
-	end
-
-	else begin
-		state_w = S_IDLE;
+		i_a_w = i_a;
+		i_d_w = i_d;
+		i_n_w = i_n;
+		MP_start_w = 1;
+		MP_rst_w = 0;
 	end
 end
 
@@ -106,64 +126,52 @@ S_PREP:begin
 	if (prep_done) begin
 		state_w = S_MONT;
 		t_w = y_256;
-		$display("======Modulo Done======");
-		$display("%64x",i_a);
-		$display("%64x",y_256);
-		$display(t_w);
-		$display("======================");
 		m_w = 1;
+		mont_start_w = 1;
+		mont_rst_w = 0;
+		MP_rst_w = 1;
 	end
 
 	else begin
-		state_w = S_PREP;
+		MP_rst_w = 0;
 	end
-
 end
 
 S_MONT:begin
-
-	m_rst_reg = 0;
-	t_rst_reg = 0;
-
-	case(i_d[cnt_r])
-		1:begin
-			if (m_done) begin
+	if (m_done && t_done) begin
+		case(i_d_r[cnt_r])
+			0:begin
 				state_w = S_CALC;
-				m_w = m_out;
 				t_w = t_out;
+				mont_rst_w = 1;
 			end
-
-			else begin
-				state_w = S_MONT;
+			1:begin
+				state_w = S_CALC;
+				t_w = t_out;
+				m_w = m_out;
+				mont_rst_w = 1;
 			end
-		
-		end
-		
-		0:begin
-			state_w = S_CALC;
-			t_w = t_out;
-		end
+		endcase
+	end
 
-	endcase
-
+	else begin
+		mont_rst_w = 0;
+	end
 end
 
 S_CALC:begin
-
-	m_rst_reg = 1;
-	t_rst_reg = 1;
-
 	if (cnt_r == 255) begin
 		state_w = S_IDLE;
-		cnt_w = 0;
-		m_w = 1;
 		o_finished_w = 1;
 		o_a_pow_d_w = m_r;
+		cnt_w = 0;
 	end
 
 	else begin
 		state_w = S_MONT;
 		cnt_w = cnt_r + 1;
+		mont_start_w = 1;
+		mont_rst_w = 0;
 	end
 
 end
@@ -191,31 +199,13 @@ else begin
 	t_r <= t_w;
 	o_finished_r <= o_finished_w;
 	o_a_pow_d_r <= o_a_pow_d_w;
-
-	bug_r <= bug_w;
-
-	if ((state_r == 0) && (state_w == 1)) begin
-		$display("sr = ", state_r);
-		$display("sw = ", state_w);
-	end
-
-	if ((state_r == 1) && (state_w == 2)) begin
-		$display("sr = ", state_r);
-		$display("sw = ", state_w);
-		$display("tw = ", t_w);
-		$display("mw = ", m_w);
-		$display("count = ", bug_r);
-	end
-
-	else if ((state_r == 2) && (state_w == 3)) begin
-		$display("sr = ", state_r);
-		$display("sw = ", state_w);
-		$display(t_out);
-		$display(m_out);
-		$display(t_r);
-		$display(m_r);
-		$display(bug_r);
-	end
+	mont_start_r <= mont_start_w;
+	mont_rst_r <= mont_rst_w;
+	MP_start_r <= MP_start_w;
+	MP_rst_r <= MP_rst_w;
+	i_a_r <= i_a_w;
+	i_d_r <= i_d_w;
+	i_n_r <= i_n_w;
 
 end
 

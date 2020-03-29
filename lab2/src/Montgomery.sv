@@ -2,10 +2,10 @@ module Montgomery(
 	input			i_clk,
 	input			i_rst,
 	input			i_start,
-	input [255:0]	i_n,
-	input [255:0]	i_a,
-	input [255:0]	i_b,
-	output [255:0]	o_result,
+	input [256:0]	i_n,
+	input [256:0]	i_a,
+	input [256:0]	i_b,
+	output [256:0]	o_result,
 	output			o_finish
 );
 
@@ -20,7 +20,7 @@ parameter S_COMP = 2'd2;			// if m > n, subtract n from m
 logic [1:0]		state_r, state_w;
 logic			finish_r, finish_w;
 logic [7:0]		index_r, index_w;
-logic [255:0]	m_r, m_w;
+logic [259:0]	m_r, m_w;
 
 /*========== Output Assignments ==========*/
 assign o_result = m_r;
@@ -45,14 +45,12 @@ always_comb begin
 			end
 		end
 		S_LOOP: begin
-			//$display("=====In Montgomery=======");
-			//$display(index_r);
-			//$display("=========================");
 			if ( i_a[index_r] ) begin 
 				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + i_n) >> 1 : (m_r + i_b) >> 1;
 			end else begin
-				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_n) >> 1 : m_r >> 1;
+				m_w = (  m_r[0] ) ? (m_r + i_n) >> 1 : m_r >> 1;
 			end
+			//$display("%3d - %64x", index_r, m_w);
 			index_w		= index_r + 1;
 			state_w		= ( index_r == 8'd255 ) ? S_COMP : state_w;
 		end

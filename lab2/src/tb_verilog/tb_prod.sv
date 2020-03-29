@@ -15,9 +15,10 @@ module tb;
 		.i_clk(clk),
 		.i_rst(rst),
 		.i_start(start_cal),
-		.i_n(256'hCA3586E7EA485F3B0A222A4C79F7DD12E85388ECCDEE4035940D774C029CF831),
-		.i_a(257'b1<<256),
-		.i_b(256'hc6b662ecb173c53cc7bb4212057f9c0ba283e000b98c9dcf5feaee7d6c933dfb),
+
+		.i_n(256'hca3586e7ea485f3b0a222a4c79f7dd12e85388eccdee4035940d774c029cf831),
+		.i_a(256'hc6b662ecb173c53cc7bb4212057f9c0ba283e000b98c9dcf5feaee7d6c933dfb),
+		.i_b(257'b1<<256),
 		.o_result(r),
 		.o_finish(fin)
 	);
@@ -35,8 +36,9 @@ module tb;
 		@(posedge clk)
 		start_cal <= 0;
 		@(posedge fin)
+		$display("%256b", 256'hc6b662ecb173c53cc7bb4212057f9c0ba283e000b98c9dcf5feaee7d6c933dfb);
 		$display("=========");
-		$display("%64d", r);
+		$display("%64x", r);
 		$display("=========");
 		$finish;
 	end
