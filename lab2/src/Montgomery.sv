@@ -45,6 +45,9 @@ always_comb begin
 			end
 		end
 		S_LOOP: begin
+			//$display("=====In Montgomery=======");
+			//$display(index_r);
+			//$display("=========================");
 			if ( i_a[index_r] ) begin 
 				m_w = ( i_b[0] ^ m_r[0] ) ? (m_r + i_b + i_n) >> 1 : (m_r + i_b) >> 1;
 			end else begin

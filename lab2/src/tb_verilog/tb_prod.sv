@@ -15,9 +15,9 @@ module tb;
 		.i_clk(clk),
 		.i_rst(rst),
 		.i_start(start_cal),
-		.i_n(256'd91),
-		.i_a(256'b1<<25),
-		.i_b(257'b1<<256),
+		.i_n(256'hCA3586E7EA485F3B0A222A4C79F7DD12E85388ECCDEE4035940D774C029CF831),
+		.i_a(257'b1<<256),
+		.i_b(256'hc6b662ecb173c53cc7bb4212057f9c0ba283e000b98c9dcf5feaee7d6c933dfb),
 		.o_result(r),
 		.o_finish(fin)
 	);

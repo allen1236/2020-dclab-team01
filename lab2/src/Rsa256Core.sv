@@ -8,7 +8,6 @@ module Rsa256Core (
 	output [255:0] o_a_pow_d, // plain text x
 	output         o_finished
 );
-
 /*========== States ==========*/
 parameter S_IDLE = 2'd0;
 parameter S_PREP = 2'd1;
@@ -17,6 +16,7 @@ parameter S_CALC = 2'd3;
 
 /*========== Parameters ==========*/
 parameter STEP = 256;
+parameter basis = (257'b1 << 256);
 /*========== Output Buffers ==========*/
 
 /*========== Variables ==========*/
@@ -30,8 +30,11 @@ logic o_finished_r, o_finished_w;
 logic prep_done;
 logic m_done;
 logic mt_done;
-logic m_rst, m_start, m_rst_reg, m_start_reg;
-logic t_rst, t_start, t_rst_reg, t_start_reg;
+logic m_rst, m_rst_reg;
+logic t_rst, t_rst_reg;
+
+
+logic [32:0] bug_r, bug_w;
 
 /*========== Output Assignments ==========*/
 assign o_finished = o_finished_r;
@@ -39,17 +42,15 @@ assign o_a_pow_d = o_a_pow_d_r;
 /*========== Compinational Circuits ==========*/
 assign m_in = m_r;
 assign t_in = t_r;
-assign m_start = m_start_reg;
-assign t_start = t_start_reg;
 assign m_rst = m_rst_reg;
 assign t_rst = t_rst_reg;
 
 ModuloProduct MP1(.i_clk(i_clk), 
 				.i_rst(i_rst), 
-				.i_start(1), 
+				.i_start(i_start), 
 				.i_n(i_n), 
-				.i_a(1 << STEP), 
-				.i_b(i_a), 
+				.i_a(i_a), 
+				.i_b(basis), 
 				.o_result(y_256), /*y under basis 2^256*/
 				.o_finish(prep_done)
 				);
@@ -57,7 +58,7 @@ ModuloProduct MP1(.i_clk(i_clk),
 Montgomery m_change(
 					.i_clk(i_clk),
 					.i_rst(i_rst || m_rst),
-					.i_start(m_start),
+					.i_start(i_start),
 					.i_n(i_n),
 					.i_a(m_in),
 					.i_b(t_in),
@@ -68,7 +69,7 @@ Montgomery m_change(
 Montgomery t_trans_256(
 					.i_clk(i_clk),
 					.i_rst(i_rst || t_rst),
-					.i_start(t_start),
+					.i_start(i_start),
 					.i_n(i_n),
 					.i_a(t_in), /*t in the slide*/
 					.i_b(t_in), /*t in the slide*/
@@ -83,16 +84,17 @@ t_w = t_r;
 o_a_pow_d_w = o_a_pow_d_r;
 o_finished_w = o_finished_r;
 
-m_start_reg = 0;
+bug_w = bug_r + 1;
+
 m_rst_reg = 1;
 t_rst_reg = 1;
-t_start_reg = 0;
 
 case(state_r)
 
 S_IDLE:begin
 	if (i_start) begin
 		state_w = S_PREP;
+		bug_w = 1;
 	end
 
 	else begin
@@ -104,6 +106,12 @@ S_PREP:begin
 	if (prep_done) begin
 		state_w = S_MONT;
 		t_w = y_256;
+		$display("======Modulo Done======");
+		$display("%64x",i_a);
+		$display("%64x",y_256);
+		$display(t_w);
+		$display("======================");
+		m_w = 1;
 	end
 
 	else begin
@@ -113,10 +121,9 @@ S_PREP:begin
 end
 
 S_MONT:begin
-	m_start_reg = 1;
+
 	m_rst_reg = 0;
 	t_rst_reg = 0;
-	t_start_reg = 1;
 
 	case(i_d[cnt_r])
 		1:begin
@@ -142,10 +149,9 @@ S_MONT:begin
 end
 
 S_CALC:begin
-	m_start_reg = 0;
+
 	m_rst_reg = 1;
 	t_rst_reg = 1;
-	t_start_reg = 0;
 
 	if (cnt_r == 255) begin
 		state_w = S_IDLE;
@@ -154,15 +160,10 @@ S_CALC:begin
 		o_finished_w = 1;
 		o_a_pow_d_w = m_r;
 	end
-	
-	else if (mt_done) begin
-		state_w = S_MONT;
-		cnt_w = cnt_r + 1;
-		t_w = t_out;
-	end
 
 	else begin
-		state_w = S_CALC;
+		state_w = S_MONT;
+		cnt_w = cnt_r + 1;
 	end
 
 end
@@ -190,8 +191,32 @@ else begin
 	t_r <= t_w;
 	o_finished_r <= o_finished_w;
 	o_a_pow_d_r <= o_a_pow_d_w;
-	$display(state_r);
-	$display(cnt_r);
+
+	bug_r <= bug_w;
+
+	if ((state_r == 0) && (state_w == 1)) begin
+		$display("sr = ", state_r);
+		$display("sw = ", state_w);
+	end
+
+	if ((state_r == 1) && (state_w == 2)) begin
+		$display("sr = ", state_r);
+		$display("sw = ", state_w);
+		$display("tw = ", t_w);
+		$display("mw = ", m_w);
+		$display("count = ", bug_r);
+	end
+
+	else if ((state_r == 2) && (state_w == 3)) begin
+		$display("sr = ", state_r);
+		$display("sw = ", state_w);
+		$display(t_out);
+		$display(m_out);
+		$display(t_r);
+		$display(m_r);
+		$display(bug_r);
+	end
+
 end
 
 end
