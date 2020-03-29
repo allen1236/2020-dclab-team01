@@ -8,10 +8,6 @@ module ModuloProduct(
 	output [256:0]	o_result,
 	output			o_finish
 );
-integer fp_w;
-initial begin
-	fp_w = $fopen("product.txt", "w");
-end
 /*========== States ==========*/
 parameter S_IDLE = 1'd0;
 parameter S_CALC = 1'd1;
@@ -68,15 +64,6 @@ always_comb begin
 				o_result_w = ( (o_result_r+mult_r) >= i_n_r) ? o_result_r+mult_r-i_n_r : o_result_r+mult_r;
 			end
 		end
-		/*
-		$display(mult_w);
-		$fwrite(fp_w, mult_w);
-		mult_w = (mult_r+mult_r > i_n_r) ? ((mult_r+mult_r)-i_n_r) : mult_r<<1;
-		$display(mult_w);
-		$fwrite(fp_w, mult_w);
-		$display("result = ",o_result_w);
-		$fwrite(fp_w,"result = %d" , mult_w);
-		*/
 	end
 	endcase
 	
