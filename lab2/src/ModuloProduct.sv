@@ -64,6 +64,7 @@ always_comb begin
 				o_result_w = ( (o_result_r+mult_r) >= i_n_r) ? o_result_r+mult_r-i_n_r : o_result_r+mult_r;
 			end
 		end
+		mult_w = (mult_r+mult_r > i_n_r) ? ((mult_r+mult_r)-i_n_r) : mult_r<<1;
 	end
 	endcase
 	
