@@ -144,7 +144,7 @@ always_comb begin
 			if ( avm_waitrequest == 0 ) begin
 				dec_w = dec_r << 8;
 				state_w = ( bytes_counter_r == 0 ) ? S_RX_QUERY : S_TX_QUERY;
-				bytes_counter_w = ( bytes_counter_r == 0 ) ? 7'd95 : bytes_counter_r - 1;
+				bytes_counter_w = ( bytes_counter_r == 0 ) ? 7'd31 : bytes_counter_r - 1;
 			end
 		end
 	endcase
