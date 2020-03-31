@@ -31,8 +31,6 @@ logic rsa_start_r, rsa_start_w;
 logic rsa_finished;
 logic [255:0] rsa_dec;
 
-logic [7:0] rx_data_out;
-
 assign avm_address = avm_address_r;
 assign avm_read = avm_read_r;
 assign avm_write = avm_write_r;
@@ -49,16 +47,6 @@ Rsa256Core rsa256_core(
     .i_n(n_r),
     .o_a_pow_d(rsa_dec),
     .o_finished(rsa_finished)
-);
-
-ReadByte readByte(
-    .i_rst(avm_rst),
-    .i_clk(avm_clk),
-    .i_waitrequest(avm_waitrequest),
-    .i_readdata(avm_readdata),
-    .o_read(avm_read_w),
-    .o_address(avm_address_w),
-    .o_data(rx_data_out),
 );
 
 //===== Tasks =====
@@ -139,32 +127,5 @@ always_ff @(posedge avm_clk or posedge avm_rst) begin
         rsa_start_r <= rsa_start_w;
     end
 end
-
-endmodule
-
-module ReadByte(
-    input           i_rst,
-    input           i_clk,
-    input           i_waitrequest,
-    input [31:0]    i_readdata,
-    output          o_read,
-    output [4:0]    o_address,
-    output [7:0]    o_data,
-);
-
-always_comb begin
-    if ( !avm_waitrequest ) begin
-        StartRead(avm_address);
-    end
-    if ( avm_read_r && avm_readdata[RX_OK_BIT] ) begin
-        $display("rx ready");
-        $display("%x", avm_address_r);
-    end
-end
-
-always_ff @( posedge i_clk or posedge i_rst ) begin
-
-end
-
 
 endmodule
