@@ -1,3 +1,5 @@
+`timescale 1ns/100ps
+
 module TestSlave (
 	input               avm_clk,
 	input               avm_rst_n,
@@ -182,8 +184,8 @@ module tb;
 	initial begin
 		$dumpfile("wrapper.fsdb");
 		$dumpvars;
-		u_input.fp = $fopen("wrapper_input.txt", "r");
-		u_output.fp = $fopen("wrapper_output.txt", "r");
+		u_input.fp = $fopen("./tb_verilog/wrapper_input.txt", "r");
+		u_output.fp = $fopen("./tb_verilog/wrapper_output.txt", "r");
 		u_output.expected = 217;
 		u_pp_rnd_m2s.count = -1;
 		u_pp_rnd_from232.count = 288;

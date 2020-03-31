@@ -1,3 +1,5 @@
+`timescale 1ns/100ps
+
 module PPRandomSrc #(
 	parameter PROB = 200,
 	parameter ORDER = 8

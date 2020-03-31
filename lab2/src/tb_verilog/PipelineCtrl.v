@@ -1,3 +1,5 @@
+`timescale 1ns/100ps
+
 module PPForward (
 	input      clk,
 	input      rst_n,
