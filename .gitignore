@@ -8,3 +8,4 @@ lab1/sim/
 *.log
 *INCA_libs
 *.fsdb
+*.vscode
