@@ -9,8 +9,9 @@ module ModuloProduct(
 	output			o_finish
 );
 /*========== States ==========*/
-parameter S_IDLE = 1'd0;
-parameter S_CALC = 1'd1;
+parameter S_IDLE = 0;
+parameter S_CALC = 1;
+parameter S_MODU = 2;
 /*========== Parameters ==========*/
 parameter [7:0] K = 8'd255;
 
@@ -45,11 +46,19 @@ always_comb begin
 	S_IDLE: begin
 		counter_w = 8'd0;
 		if(i_start) begin
-			state_w = S_CALC;
+			state_w = S_MODU;
 			i_a_w = i_a;
 			i_n_w = i_n;
-			mult_w = i_b%i_n;
+			mult_w = i_b;
 			o_result_w = 1'd0;
+		end
+	end
+
+	S_MODU: begin
+		if ( mult_r > i_n_r ) begin
+			mult_w = mult_r - i_n_r;
+		end else begin
+			state_w = S_CALC;
 		end
 	end
 
