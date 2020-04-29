@@ -13,7 +13,7 @@ module tb;
 	logic [3:0] spd;
 	logic fast, inte;
 
-	logic [19:0] sram_addr;
+	int sram_addr;
 	logic [15:0] sram_data;
 	logic sram_write;
 	int sram_storage[64];
@@ -24,9 +24,10 @@ module tb;
 
 	wire [15:0] sram_data_w;
 	wire lrc_w, clk_w;
+	wire [5:0] hex1, hex2;
 	assign lrc_w = lrc;
 	assign clk_w = clk;
-	assign sram_data_w = sram_data;
+	assign sram_data_w = (sram_write) ? sram_data :'z;
 
 	wire null_logic;
 
@@ -36,7 +37,7 @@ module tb;
 	Top top0(
 		.i_rst_n(rst_n),
 		.i_clk(clk),
-		.i_key_0(rec),
+		.i_key_0(recd),
 		.i_key_1(play),
 		.i_key_2(stop),
 		.i_speed(spd), // design how user can decide mode on your own
@@ -65,8 +66,8 @@ module tb;
 		.o_AUD_DACDAT(play_data),
 
 		// SEVENDECODER (optional display)
-		.o_record_time(recd_time),
-		.o_play_time(play_time)
+		.o_record_time(hex1),
+		.o_play_time(hex2)
 
 		// LCD (optional display)
 		// .i_clk_800k(CLK_800K),
@@ -82,43 +83,30 @@ module tb;
 		// .o_ledr(LEDR) // [17:0]
 	);
 
-	task wm8731( input i_bit, input i_lrc, output o_bit);
+	task wm8731();
 		while (1) begin
-			@(negedge clk)
-			if ( !i_lrc ) begin
-				#(HCLK);
-				for ( int j = 0; j < 16; j++ ) begin
-					@(negedge clk)
-						o_bit = ( j == 0 || j == 15 || j == a ) ? 1 : 0;
-						wm_data[15-j] = i_bit;
-				end
-				a = (a == 14)  ? 1 : a+1;
-				wm_data_r = wm_data;
+			@(negedge lrc)
+			#(CLK);
+			for ( int j = 0; j < 16; j++ ) begin
+				recd_data = ( j == 0 || j == 15 || j == a ) ? 1 : 0;
+				wm_data[15-j] = play_data;
+				#(CLK);
 			end
+			a = (a == 14)  ? 1 : a+1;
+			wm_data_r = wm_data;
 		end
 	endtask
 
-	task press(output key);
-		key = 1;
-		#(3*CLK);
-		key = 0;
-	endtask
 
 	always_comb begin
-		if ( !sram_write ) begin
-			sram_data = sram_storage[sram_addr];
-		end
-	end
-
-	always_ff @(posedge clk) begin
 		if ( sram_write ) begin
-			sram_storage[sram_addr] <= sram_data_w;
-			sram_storage[sram_addr] <= 1;
+			sram_data = sram_storage[sram_addr];
+		end else begin
+			sram_storage[sram_addr] = sram_data_w;
 		end
 	end
 
 	initial begin
-		$monitor("addr= %2d", sram_addr);
 		rst_n = 1;
 		#(1*CLK);
 		rst_n = 0;
@@ -128,34 +116,45 @@ module tb;
 		@(posedge clk)
 		$display("start");
 
-		press(recd);
-		#(9*CLK);
-		press(recd);
-		#(9*CLK);
-		press(recd);
-		#(9*CLK);
-		press(stop);
-		#(9*CLK);
+		stop = 0;
+		play = 0;
+		recd = 1;
+		#(3*CLK);
+		recd = 0;
+		#(20*40*CLK);
+		stop = 1;
+		#(3*CLK);
+		stop = 0;
+		#(10*40*CLK);
 
-		press(play);
-		#(9*CLK);
-		press(play);
-		#(9*CLK);
-		press(play);
-		#(9*CLK);
-		press(stop);
-		#(9*CLK);
+		play = 1;
+		#(3*CLK);
+		play = 0;
+		#(20*40*CLK);
+
+		stop = 1;
+		#(3*CLK);
+		stop = 0;
+		#(10*40*CLK);
+		
+		$display("finish");
 
 		$finish;
 	end
 
 	initial begin
-		$monitor("playing: %16b", wm_data_r );
+		//$monitor("playing: %16b", wm_data_r );
+		//$monitor("sending: %1b", play_data );
+		//$monitor("state= %1d (%6d)", hex2, $time );
+		//$monitor("input: %1b", recd_data, $time);
 	end
+
+	//always @sram_addr
+	//$display("addr= %2d, data=%16b", sram_addr, sram_data_w ,$time);
 
 	initial begin
 		a = 1;
-		wm8731(recd_data, lrc, play_data);
+		wm8731();
 	end
 
 	initial begin
@@ -168,14 +167,16 @@ module tb;
 		end
 	end
 
+	/*
 	initial begin
 		for (int j=0; j < 8; j++) begin
-			#(10*CLK)
+			#(5*40*CLK)
 			for( int j=0; j < 32; j++ ) begin
 				$display( "sram[%2d] %16b", j,  sram_storage[j]);
 			end
 		end
 	end
+	*/
 
 	initial begin
 		#(500000*CLK);
