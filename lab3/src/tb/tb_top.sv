@@ -1,4 +1,4 @@
-`timescale 1ns/10ps
+`timescale 1ns/100ps
 
 module tb;
 	localparam CLK = 10;
@@ -16,13 +16,19 @@ module tb;
 	logic [19:0] sram_addr;
 	logic [15:0] sram_data;
 	logic sram_write;
-	logic [15:0] sram_storage[63:0];
+	int sram_storage[64];
 
 	logic recd_data, play_data, lrc;
 	logic [5:0] recd_time, play_time;
 	logic [15:0] wm_data, wm_data_r;
 
-	logic null_logic;
+	wire [15:0] sram_data_w;
+	wire lrc_w, clk_w;
+	assign lrc_w = lrc;
+	assign clk_w = clk;
+	assign sram_data_w = sram_data;
+
+	wire null_logic;
 
 	int a;
 
@@ -39,7 +45,7 @@ module tb;
 
 		// AudDSP and SRAM
 		.o_SRAM_ADDR(sram_addr), // [19:0]
-		.io_SRAM_DQ(sram_data), // [15:0]
+		.io_SRAM_DQ(sram_data_w), // [15:0]
 		.o_SRAM_WE_N(sram_write),
 		.o_SRAM_CE_N(null_logic),
 		.o_SRAM_OE_N(null_logic),
@@ -53,9 +59,9 @@ module tb;
 		
 		// AudPlayer
 		.i_AUD_ADCDAT(recd_data),
-		.i_AUD_ADCLRCK(lrc),
-		.i_AUD_BCLK(clk),
-		.i_AUD_DACLRCK(lrc),
+		.i_AUD_ADCLRCK(lrc_w),
+		.i_AUD_BCLK(clk_w),
+		.i_AUD_DACLRCK(lrc_w),
 		.o_AUD_DACDAT(play_data),
 
 		// SEVENDECODER (optional display)
@@ -76,15 +82,9 @@ module tb;
 		// .o_ledr(LEDR) // [17:0]
 	);
 
-	task sram( input write, input [19:0] addr, inout [15:0] data );
-		if ( write ) begin
-			sram_storage[addr] = data;
-		end else begin
-			data = sram_storage[addr];
-		end
-	endtask
-	task wm8731( input i_clk, input i_bit, input i_lrc, output o_bit);
+	task wm8731( input i_bit, input i_lrc, output o_bit);
 		while (1) begin
+			@(negedge clk)
 			if ( !i_lrc ) begin
 				#(HCLK);
 				for ( int j = 0; j < 16; j++ ) begin
@@ -104,7 +104,21 @@ module tb;
 		key = 0;
 	endtask
 
+	always_comb begin
+		if ( !sram_write ) begin
+			sram_data = sram_storage[sram_addr];
+		end
+	end
+
+	always_ff @(posedge clk) begin
+		if ( sram_write ) begin
+			sram_storage[sram_addr] <= sram_data_w;
+			sram_storage[sram_addr] <= 1;
+		end
+	end
+
 	initial begin
+		$monitor("addr= %2d", sram_addr);
 		rst_n = 1;
 		#(1*CLK);
 		rst_n = 0;
@@ -112,6 +126,7 @@ module tb;
 		rst_n = 1;
 		#(1*CLK);
 		@(posedge clk)
+		$display("start");
 
 		press(recd);
 		#(9*CLK);
@@ -139,10 +154,6 @@ module tb;
 	end
 
 	initial begin
-		sram( sram_write, sram_addr, sram_data );
-	end
-	
-	initial begin
 		a = 1;
 		wm8731(recd_data, lrc, play_data);
 	end
@@ -160,7 +171,9 @@ module tb;
 	initial begin
 		for (int j=0; j < 8; j++) begin
 			#(10*CLK)
-			$display(sram_storage);
+			for( int j=0; j < 32; j++ ) begin
+				$display( "sram[%2d] %16b", j,  sram_storage[j]);
+			end
 		end
 	end
 

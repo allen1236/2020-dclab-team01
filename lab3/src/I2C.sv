@@ -11,7 +11,7 @@ module I2cInitializer(
 );
 
 
-localparam [23:0][6:0] config_data = {
+localparam [23:0] config_data[6:0] = {
     24'b0011_0100_000_1111_0_0000_0000,
     24'b0011_0100_000_0100_0_0001_0101,
     24'b0011_0100_000_0101_0_0000_0000,
@@ -29,7 +29,7 @@ logic o_sclk_r, o_sclk_w;
 logic o_sdat_r, o_sdat_w;
 logic[3:0] state_r, state_w;
 logic o_finished_r, o_finished_w;
-logic[4:0] bit_cnt_r, bit_cnt_w;
+logic[5:0] bit_cnt_r, bit_cnt_w;
 logic[3:0] conf_cnt_r, conf_cnt_w;
 logic ack_r, ack_w;
 
@@ -52,6 +52,11 @@ always_comb begin
 
     case(state_r)
         S_IDLE: begin
+            if(o_sclk_r && !o_sdat_r) begin
+                o_finished_w = 1'd1;
+            end else begin
+                o_finished_w = 1'd0;
+            end
             o_sclk_w = 1'd1;
             o_sdat_w = 1'd1;
             if(i_start) begin
