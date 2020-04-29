@@ -38,6 +38,7 @@ always_comb begin
     state_w   = state_r;
     o_addr_w  = o_addr_r;
     o_en_w    = o_en_r;
+	 o_data_w = o_data_r;
 
     case(state_r)
         S_IDLE: begin

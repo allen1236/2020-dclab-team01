@@ -43,6 +43,7 @@ always_comb begin
 		S_IDLE: begin
 			if ( i_start ) begin
 				state_w = S_WAIT_1;
+				addr_w = 0;
 			end
 		end
 		S_WAIT_1: begin 	// wait for LRC to rise
@@ -71,10 +72,6 @@ always_comb begin
 	
 	if ( i_pause || i_stop ) begin
 		state_w = S_IDLE;
-	end
-
-	if ( i_stop ) begin
-		addr_w = 0;
 	end
 
 end

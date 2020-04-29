@@ -7,6 +7,7 @@ module Top (
 	input [3:0] i_speed,	// speed (0~8)
 	input i_fast,			// fast/slow
 	input i_inte,			// 1/0 interpolation
+
 	
 	// AudDSP and SRAM
 	output [19:0] o_SRAM_ADDR,
@@ -27,11 +28,11 @@ module Top (
 	inout  i_AUD_ADCLRCK,
 	inout  i_AUD_BCLK,
 	inout  i_AUD_DACLRCK,
-	output o_AUD_DACDAT
+	output o_AUD_DACDAT,
 
 	// SEVENDECODER (optional display)
-	// output [5:0] o_record_time,
-	// output [5:0] o_play_time,
+	output [5:0] o_record_time,
+	output [5:0] o_play_time
 
 	// LCD (optional display)
 	// input        i_clk_800k,
@@ -71,16 +72,18 @@ logic [15:0] 	data_record, data_play, dac_data;
 assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
 
-assign o_SRAM_ADDR = (S_RECD) ? addr_record : addr_play;
-assign io_SRAM_DQ  = (S_RECD) ? data_record : 16'dz; // sram_dq as output
-assign data_play   = (S_RECD) ? io_SRAM_DQ : 16'd0; // sram_dq as input
+assign o_SRAM_ADDR = (state_r==S_RECD || state_r == S_RECDP) ? addr_record : addr_play;
+assign io_SRAM_DQ  = (state_r==S_RECD || state_r == S_RECDP) ? data_record : 16'dz; // sram_dq as output
+assign data_play   = (state_r==S_RECD || state_r == S_RECDP) ? io_SRAM_DQ : 16'd0; // sram_dq as input
 
-assign o_SRAM_WE_N = (S_RECD) ? 1'b0 : 1'b1;
+assign o_SRAM_WE_N = (state_r==S_RECD || state_r == S_RECDP) ? 1'b0 : 1'b1;
 assign o_SRAM_CE_N = 1'b0;
 assign o_SRAM_OE_N = 1'b0;
 assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
 
+assign o_record_time = addr_record / 32000;
+assign o_play_time = addr_play / 32000;
 // === submodule i/o ===
 
 // i2c
@@ -197,15 +200,18 @@ always_comb begin
 			if (i_key_0) begin 				// start recording
 				recorder_start = 1;
 				addr_end_w = 0;
+				state_w = S_RECD;
 			end else if (i_key_1) begin		// start playing
+				dsp_start = 1;
+				state_w = S_PLAY;
 			end
 		end
 		S_RECD: begin
 			if (i_key_0) begin				// pause
 				recorder_pause = 1;
-				addr_end_w = addr_record;
 				state_w = S_RECDP;
 			end
+			addr_end_w = addr_record;
 		end
 		S_RECDP: begin
 			if (i_key_0) begin				// resume recording
