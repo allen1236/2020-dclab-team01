@@ -52,34 +52,16 @@ parameter S_INIT		= 3'b000;
 parameter S_IDLE		= 3'b111;
 
 parameter S_PLAY       	= 3'b001;
-parameter S_PLAYP 	= 3'b010;
+parameter S_PLAYP 		= 3'b010;
 
 parameter S_RECD       	= 3'b101;
-parameter S_RECDP 	= 3'b110;
+parameter S_RECDP 		= 3'b110;
 
 // === variables ===
 logic [2:0] 	state_r, state_w;
 logic [19:0]	addr_end_r, addr_end_w;		// the end address of the audio
 logic [2:0]		i_speed_r, speed_r, speed_w;
 logic 			i_inte_r ,i_fast_r;
-
-// === submodule i/o ===
-
-// i2c
-logic i2c_start, i2c_finished;
-
-// dsp
-logic dsp_start, dsp_pause, dsp_stop;
-
-// player
-logic player_en;
-
-// recorder
-logic recorder_start, recorder_pause, recorder_stop;
-
-// display
-logic [19:0]	display_addr;
-assign display_addr = (S_RECD || S_RECDP) ? addr_record : addr_play;
 
 // === output assignments ===
 logic i2c_oen, i2c_sdat;
@@ -99,6 +81,23 @@ assign o_SRAM_OE_N = 1'b0;
 assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
 
+// === submodule i/o ===
+
+// i2c
+logic i2c_start, i2c_finished;
+
+// dsp
+logic dsp_start, dsp_pause, dsp_stop;
+
+// player
+logic player_en;
+
+// recorder
+logic recorder_start, recorder_pause, recorder_stop;
+
+// display
+logic [19:0]	display_addr;
+assign display_addr = (S_RECD || S_RECDP) ? addr_record : addr_play;
 
 
 // below is a simple example for module division
@@ -157,7 +156,7 @@ AudRecorder recorder0(
 	.i_stop(recorder_stop),
 	.i_data(i_AUD_ADCDAT),
 	.o_address(addr_record),
-	.o_data(data_record),
+	.o_data(data_record)
 );
 
 /*
@@ -230,15 +229,13 @@ always_comb begin
 
 	// stop
 	case(state_r)
-		S_RECD:
-		S_RECDP: begin
+		S_RECD, S_RECDP: begin
 			if (i_key_2) begin		// stop recording
 				state_w = S_IDLE;
 				recorder_stop = 1;
 			end
 		end
-		S_PLAY:
-		S_PLAYP: begin
+		S_PLAY, S_PLAYP: begin
 			if (i_key_2) begin		// stop playing
 				state_w = S_IDLE;
 				dsp_stop = 1;

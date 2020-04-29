@@ -23,6 +23,8 @@ localparam S_IDLE = 0;
 localparam S_NORM = 1; // normal mode
 localparam S_FAST = 2;
 localparam S_SLOW = 3;
+localparam S_RUN  = 4;
+localparam S_PAUS = 5;
 
 // ouput assignments
 
@@ -39,28 +41,41 @@ always_comb begin
 
     case(state_r)
         S_IDLE: begin
-            if (i_start) begin
-                o_en_w  = 0;
-                state_w = S_NORM;
-                o_data_w = i_sram_data;
-                case(i_fast)
-                    1'd1: begin // fast case
-                        if(i_speed != 1) begin
-                            state_w = S_FAST;
-                        end
-                    end
-                    1'd0: begin // slow case
-                        if(i_speed != 1) begin
-                            state_w = S_SLOW;
-                        end
-                    end
-                endcase
+            o_en_w = 0;
+            o_addr_w = 0;
+            o_data_w = 0;
+            if(i_start) begin
+                state_w = S_RUN;
             end
         end
-
+        S_PAUS: begin
+            o_en_w = 0;
+            if(i_start) begin
+                state_w = S_RUN;
+            end
+        end
+        S_RUN: begin
+            o_en_w = 1;
+            state_w = S_NORM;
+            case(i_fast)
+                1'd1: begin // fast case
+                    if(i_speed != 1) begin
+                         state_w = S_FAST;
+                    end
+                end
+                1'd0: begin // slow case
+                    if(i_speed != 1) begin
+                        state_w = S_SLOW;
+                    end
+                end
+            endcase
+        end
         S_NORM: begin
-            if(i_pause || i_stop) begin
+            if(i_stop) begin
                 state_w = S_IDLE;
+            end
+            else if(i_pause) begin
+                state_w = S_PAUS;
             end
             else begin
                 o_addr_w = o_addr_r + 1;
@@ -79,12 +94,18 @@ always_comb begin
     endcase
 end
 
-always_ff @(posedge i_clk or negedge i_rst_n) begin
+always_ff @(posedge i_clk or negedge i_rst_n or negedge i_daclrck) begin
     if(!i_rst_n) begin
         state_r  = S_IDLE;
         o_en_r   = 0;
         o_data_r = 0;
         o_addr_r = 0;
+    end
+    else if(!i_daclrck) begin
+        state_r  = S_RUN;
+        o_en_r   = 0;
+        o_data_r = i_sram_data;
+        o_addr_r = i_sram_data;
     end
     else begin
         state_r  = state_w;
