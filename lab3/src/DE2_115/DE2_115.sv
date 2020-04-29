@@ -171,14 +171,17 @@ Debounce deb2(
 	.o_neg(key2down) 
 );
 
+
 Top top0(
 	.i_rst_n(KEY[3]),
 	.i_clk(CLK_12M),
 	.i_key_0(key0down),
 	.i_key_1(key1down),
 	.i_key_2(key2down),
-	// .i_speed(SW[3:0]), // design how user can decide mode on your own
-	
+	.i_speed(SW[3:0]), // design how user can decide mode on your own
+	.i_fast(SW[4]),
+	.i_inte(SW[5]),
+
 	// AudDSP and SRAM
 	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
 	.io_SRAM_DQ(SRAM_DQ), // [15:0]
