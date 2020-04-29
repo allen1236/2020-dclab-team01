@@ -52,10 +52,10 @@ parameter S_INIT		= 3'b000;
 parameter S_IDLE		= 3'b111;
 
 parameter S_PLAY       	= 3'b001;
-parameter S_PLAY_PAUSE 	= 3'b010;
+parameter S_PLAYP 	= 3'b010;
 
 parameter S_RECD       	= 3'b101;
-parameter S_RECD_PAUSE 	= 3'b110;
+parameter S_RECDP 	= 3'b110;
 
 // === variables ===
 logic [2:0] 	state_r, state_w;
@@ -79,7 +79,7 @@ logic recorder_start, recorder_pause, recorder_stop;
 
 // display
 logic [19:0]	display_addr;
-assign display_addr = (S_REC || S_RECD_PAUSE) ? addr_record : addr_play;
+assign display_addr = (S_RECD || S_RECDP) ? addr_record : addr_play;
 
 // === output assignments ===
 logic i2c_oen, i2c_sdat;
@@ -185,7 +185,7 @@ always_comb begin
 
 	speed_w = ( i_speed_r >= 1 && i_speed_r <= 8 ) ? i_speed_r-1 : 0;
 
-	statte_w = state_r;
+	state_w = state_r;
 	addr_end_w = addr_end_r;
 
 	// rec, play
@@ -205,10 +205,10 @@ always_comb begin
 			if (i_key_0) begin				// pause
 				recorder_pause = 1;
 				addr_end_w = addr_record;
-				state_w = S_RECD_PAUSE;
+				state_w = S_RECDP;
 			end
 		end
-		S_RECD_PAUSE: begin
+		S_RECDP: begin
 			if (i_key_0) begin				// resume recording
 				recorder_start = 1;
 				state_w = S_RECD;
@@ -216,11 +216,11 @@ always_comb begin
 		end
 		S_PLAY: begin
 			if (i_key_1) begin				// pause
-				state_w = S_PLAY_PAUSE;
+				state_w = S_PLAYP;
 				dsp_pause = 1;
 			end
 		end
-		S_PLAY_PAUSE: begin
+		S_PLAYP: begin
 			if (i_key_1) begin				// resume 
 				state_w = S_PLAY;
 				dsp_start = 1;
@@ -231,14 +231,14 @@ always_comb begin
 	// stop
 	case(state_r)
 		S_RECD:
-		S_RECD_PAUSE: begin
+		S_RECDP: begin
 			if (i_key_2) begin		// stop recording
 				state_w = S_IDLE;
 				recorder_stop = 1;
 			end
 		end
 		S_PLAY:
-		S_PLAY_PAUSE: begin
+		S_PLAYP: begin
 			if (i_key_2) begin		// stop playing
 				state_w = S_IDLE;
 				dsp_stop = 1;
