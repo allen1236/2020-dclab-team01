@@ -38,14 +38,6 @@ assign o_dac_data = o_data_r;
 assign o_sram_addr = o_addr_r;
 assign o_player_en = o_en_r;
 
-always begin
-	@state_r
-	$display("state: %1d", state_r, $time);
-end
-always begin
-	@i_start
-	$display("i_start: %1d", state_r, $time);
-end
 
 always_comb begin
 
@@ -112,12 +104,6 @@ always_comb begin
         end
         S_FAST, S_SLOW0, S_SLOW1: begin
             state_w = S_WAIT1;
-            if (i_pause) begin
-                state_w = S_PAUS;
-            end else if (i_stop) begin
-                state_w = S_IDLE;
-                o_addr_w = 0;
-            end
         end
         S_PAUS: begin
             if (i_start) begin
@@ -129,6 +115,16 @@ always_comb begin
             o_en_w = 0;
         end
     endcase
+    if (state_r != S_IDLE) begin
+        if (i_pause) begin
+            state_w = S_PAUS;
+        end else if (i_stop) begin
+            state_w = S_IDLE;
+            o_addr_w = 0;
+            o_data_w = 0;
+            o_en_w = 0;
+        end
+    end
 end
 
 always_ff @(posedge i_clk or negedge i_rst_n ) begin
@@ -137,10 +133,12 @@ always_ff @(posedge i_clk or negedge i_rst_n ) begin
         i_fast_r    <= 0;
         i_inte_r    <= 0;
         state_r     <= S_IDLE;
+        mode_r      <= 0;
         o_addr_r    <= 0;
         prev_data_r <= 0;
         o_data_r    <= 0;
         cnt_r       <= 0;
+        o_en_r      <= 0;
     end else begin
         if (state_r == S_WAIT2) begin   // change speed settings only in S_WAIT2
             i_speed_r   <= i_speed;
@@ -148,10 +146,12 @@ always_ff @(posedge i_clk or negedge i_rst_n ) begin
             i_inte_r    <= i_inte;
         end
         state_r     <= state_w;
+        mode_r      <= mode_w;
         o_addr_r    <= o_addr_w;
         prev_data_r <= prev_data_w;
         o_data_r    <= o_data_w;
         cnt_r       <= cnt_w;
+        o_en_r      <= o_en_w;
     end
 end
 

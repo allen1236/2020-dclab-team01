@@ -74,7 +74,7 @@ assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 
 assign o_SRAM_ADDR = (state_r==S_RECD || state_r == S_RECDP) ? addr_record : addr_play;
 assign io_SRAM_DQ  = (state_r==S_RECD || state_r == S_RECDP) ? data_record : 16'dz; // sram_dq as output
-assign data_play   = (state_r==S_RECD || state_r == S_RECDP) ? io_SRAM_DQ : 16'd0; // sram_dq as input
+assign data_play   = (state_r==S_RECD || state_r == S_RECDP) ? 16'd0 : io_SRAM_DQ; // sram_dq as input
 
 assign o_SRAM_WE_N = (state_r==S_RECD || state_r == S_RECDP) ? 1'b0 : 1'b1;
 assign o_SRAM_CE_N = 1'b0;
@@ -174,8 +174,11 @@ Display display0(
 );*/
 
 always begin
-	@dac_data;
-	//$display("dac data: %16b", dac_data, $time);
+	//@o_AUD_DACDAT
+	//$display("output data: %1b", o_AUD_DACDAT, $time);
+	@o_SRAM_ADDR;
+	$display("end address: %2d, addr_play: %2d, sram_addr: %2d", addr_end_r, addr_play, o_SRAM_ADDR);
+
 end
 
 always_comb begin
@@ -209,7 +212,6 @@ always_comb begin
 				state_des_w = S_RECD;
 				state_w = S_BUFF;
 			end else if (i_key_1) begin		// start playing
-				dsp_start = 1;
 				state_des_w = S_PLAY;
 				state_w = S_BUFF;
 
@@ -274,7 +276,7 @@ always_comb begin
 			end
 		end
 		S_PLAY, S_PLAYP: begin
-			if (i_key_2) begin		// stop playing
+			if (i_key_2 || speed_r + addr_play >= addr_end_r) begin		// stop playing
 				state_w = S_IDLE;
 				dsp_stop = 1;
 			end
