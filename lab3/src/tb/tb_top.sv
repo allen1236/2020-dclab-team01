@@ -107,14 +107,21 @@ module tb;
 	end
 
 	initial begin
+        $fsdbDumpfile("top.fsdb");
+        $fsdbDumpvars;
 		rst_n = 1;
 		#(1*CLK);
 		rst_n = 0;
 		#(2*CLK);
 		rst_n = 1;
 		#(1*CLK);
+		spd = 0;
+		fast = 0;
+		inte = 0;
+		#(2*CLK);
+
 		@(posedge clk)
-		$display("start");
+		$display("=========== start ===========");
 
 		stop = 0;
 		play = 0;
@@ -137,7 +144,7 @@ module tb;
 		stop = 0;
 		#(10*40*CLK);
 		
-		$display("finish");
+		$display("========== finish ===========");
 
 		$finish;
 	end
