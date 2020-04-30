@@ -174,8 +174,8 @@ Display display0(
 );*/
 
 always begin
-	@dac_data
-	$display("data: %16b", dac_data, $time);
+	@dac_data;
+	//$display("dac data: %16b", dac_data, $time);
 end
 
 always_comb begin
