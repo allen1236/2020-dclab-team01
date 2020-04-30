@@ -144,7 +144,7 @@ assign AUD_XCK = CLK_12M;
 
 Altpll pll0( // generate with qsys, please follow lab2 tutorials
 	.clk_clk(CLOCK_50),
-	.reset_reset_n(key3down),
+	.reset_reset_n(KEY[3]),
 	.altpll_12m_clk(CLK_12M),
 	.altpll_100k_clk(CLK_100K),
 	.altpll_800k_clk(CLK_800K)

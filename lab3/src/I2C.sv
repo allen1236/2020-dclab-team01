@@ -1,4 +1,4 @@
-`timescale 1ns/100ps
+
 
 module I2cInitializer(
     input  i_rst_n,
@@ -7,7 +7,8 @@ module I2cInitializer(
     output o_finished, //
     output o_sclk,    
     output o_sdat,    
-    output o_oen      // for every 8-bit data sent
+    output o_oen,     // for every 8-bit data sent
+    output [5:0] o_hex
 );
 
 
@@ -22,8 +23,8 @@ localparam logic [23:0] config_data[6:0] = '{
 } ;
 
 /* satates */
-localparam S_IDLE = 3'd0;
-localparam S_TX   = 3'd1;
+localparam S_IDLE = 0;
+localparam S_TX   = 1;
 
 logic o_sclk_r, o_sclk_w;
 logic o_sdat_r, o_sdat_w;
@@ -38,6 +39,7 @@ assign o_finished = o_finished_r;
 assign o_oen = ~ack_r;
 assign o_sclk = o_sclk_r;
 assign o_sdat = o_sdat_r;
+assign o_hex = state_w;
 
 
 /* combinational */
@@ -52,7 +54,7 @@ always_comb begin
 
     case(state_r)
         S_IDLE: begin
-            o_finished_w = 0; 
+            o_finished_w = 1; 
             o_sclk_w = 1'd1;
             o_sdat_w = 1'd1;
             if(i_start) begin
@@ -76,7 +78,7 @@ always_comb begin
                 end
             end
             else if( conf_cnt_w > 6) begin // finished 24*7 bits setting
-                state_w = S_IDLE;
+                state_w = state_w;
                 o_sclk_w = 1'd1;
                 o_sdat_w = 1'd0;
                 o_finished_w = 1'd1;
@@ -88,22 +90,22 @@ end
 /* sequential */
 always_ff @ (posedge i_clk or negedge i_rst_n) begin
     if(!i_rst_n) begin
-        state_r = S_IDLE;
-        o_finished_r = 0;
-        o_sclk_r = 1;
-        o_sdat_r = 1;
-        bit_cnt_r = 0;
-        conf_cnt_r = 0;
-        ack_r = 0;
+        state_r <= S_IDLE;
+        o_finished_r <= 0;
+        o_sclk_r <= 1;
+        o_sdat_r <= 1;
+        bit_cnt_r <= 0;
+        conf_cnt_r <= 0;
+        ack_r <= 0;
     end
     else begin
-        state_r = state_w;
-        o_finished_r = o_finished_w;
-        o_sclk_r = o_sclk_w;
-        o_sdat_r = o_sdat_w;
-        bit_cnt_r = bit_cnt_w;
-        conf_cnt_r = conf_cnt_w;
-        ack_r = ack_w;
+        state_r <= state_w;
+        o_finished_r <= o_finished_w;
+        o_sclk_r <= o_sclk_w;
+        o_sdat_r <= o_sdat_w;
+        bit_cnt_r <= bit_cnt_w;
+        conf_cnt_r <= conf_cnt_w;
+        ack_r <= ack_w;
     end
 
 end

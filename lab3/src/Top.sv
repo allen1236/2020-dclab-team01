@@ -49,20 +49,19 @@ module Top (
 );
 
 // === params ===
-parameter S_INIT		= 6;
-parameter S_IDLE		= 1;
-parameter S_PLAY       	= 2;
-parameter S_PLAYP 		= 3;
-parameter S_RECD       	= 4;
-parameter S_RECDP 		= 5;
-parameter S_BUFF		= 0;
+localparam S_INIT		= 6;
+localparam S_IDLE		= 1;
+localparam S_PLAY       	= 2;
+localparam S_PLAYP 		= 3;
+localparam S_RECD       	= 4;
+localparam S_RECDP 		= 5;
+localparam S_BUFF		= 0;
 
 // === variables ===
 logic [2:0] 	state_r, state_w, state_des_r, state_des_w;
 logic [19:0]	addr_end_r, addr_end_w;		// the end address of the audio
 logic [2:0]		i_speed_r, speed_r, speed_w;
 logic 			i_inte_r ,i_fast_r;
-logic 			cnt_r, cnt_w;
 
 // === output assignments ===
 logic i2c_oen, i2c_sdat;
@@ -83,15 +82,15 @@ assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
 
 assign o_record_time = addr_record / 32000;
-//assign o_play_time = addr_play / 32000;
-assign o_play_time = state_r;
+assign o_play_time = addr_play / 32000;
+logic [5:0] hex;
 // === submodule i/o ===
 
 // i2c
 logic i2c_start, i2c_finished;
 
 // dsp
-logic dsp_start, dsp_pause, dsp_stop;
+logic dsp_pause, dsp_stop;
 
 // player
 logic player_en;
@@ -110,11 +109,12 @@ logic recorder_start, recorder_pause, recorder_stop;
 I2cInitializer init0(
 	.i_rst_n(i_rst_n),
 	.i_clk(i_clk_100K),
-	.i_start(i2c_start),
+	.i_start(1),
 	.o_finished(i2c_finished),
 	.o_sclk(o_I2C_SCLK),
 	.o_sdat(i2c_sdat),
-	.o_oen(i2c_oen) // you are outputing (you are not outputing only when you are "ack"ing.)
+	.o_oen(i2c_oen), // you are outputing (you are not outputing only when you are "ack"ing.)
+	.o_hex(hex)
 );
 
 // === AudDSP ===
@@ -123,9 +123,9 @@ I2cInitializer init0(
 AudDSP dsp0(
 	.i_rst_n(i_rst_n),
 	.i_clk(i_AUD_BCLK),
-	.i_start(dsp_start),
-	.i_pause(dsp_pause),
-	.i_stop(dsp_stop),
+	.i_start(state_r==S_PLAY),
+	.i_pause(state_r==S_PLAYP),
+	.i_stop(state_r==S_IDLE),
 	.i_speed(speed_r),
 	.i_fast(i_fast_r),
 	.i_inte(i_inte_r),
@@ -153,9 +153,9 @@ AudRecorder recorder0(
 	.i_rst_n(i_rst_n), 
 	.i_clk(i_AUD_BCLK),
 	.i_lrc(i_AUD_ADCLRCK),
-	.i_start(recorder_start),
-	.i_pause(recorder_pause),
-	.i_stop(recorder_stop),
+	.i_start(state_r==S_RECD),
+	.i_pause(state_r==S_RECDP),
+	.i_stop(state_r==S_IDLE),
 	.i_data(i_AUD_ADCDAT),
 	.o_address(addr_record),
 	.o_data(data_record)
@@ -178,33 +178,22 @@ always begin
 	//$display("output data: %1b", o_AUD_DACDAT, $time);
 	@o_SRAM_ADDR;
 	$display("end address: %2d, addr_play: %2d, sram_addr: %2d", addr_end_r, addr_play, o_SRAM_ADDR);
-
 end
 
 always_comb begin
 
 	// default values
-	i2c_start = 0;
-	recorder_start = 0;
-	recorder_pause = 0;
-	recorder_stop = 0;
-	dsp_start = 0;
-	dsp_pause = 0;
-	dsp_stop = 0;
 
 	speed_w = ( i_speed_r >= 1 && i_speed_r <= 8 ) ? i_speed_r-1 : 0;
 
 	state_w = state_r;
 	state_des_w = state_des_r;
 	addr_end_w = addr_end_r;
-	cnt_w = cnt_r;
 
 	// rec, play
 	case(state_r)
 		S_INIT: begin
 			state_w =  (i2c_finished) ? S_IDLE : state_w;
-			i2c_start = cnt_r < 2 ? 1 : 0;
-			cnt_w = (cnt_r < 2) ?  cnt_r + 1 : cnt_w;
 		end
 		S_IDLE: begin
 			if (i_key_0) begin 				// start recording
@@ -219,7 +208,6 @@ always_comb begin
 		end
 		S_RECD: begin
 			if (i_key_0) begin				// pause
-				recorder_pause = 1;
 				state_des_w = S_RECDP;
 				state_w = S_BUFF;
 			end
@@ -227,7 +215,6 @@ always_comb begin
 		end
 		S_RECDP: begin
 			if (i_key_0) begin				// resume recording
-				recorder_start = 1;
 				state_des_w = S_RECD;
 				state_w = S_BUFF;
 			end
@@ -236,33 +223,17 @@ always_comb begin
 			if (i_key_1) begin				// pause
 				state_des_w = S_PLAYP;
 				state_w = S_BUFF;
-				dsp_pause = 1;
 			end
 		end
 		S_PLAYP: begin
 			if (i_key_1) begin				// resume 
 				state_des_w = S_PLAY;
 				state_w = S_BUFF;
-				dsp_start = 1;
 			end
 		end
 		S_BUFF: begin
 			if (!i_key_0 && !i_key_1) begin
 				state_w = state_des_r;
-				case(state_des_r) 
-					S_RECD: begin
-						recorder_start = 1;
-					end
-					S_RECDP: begin
-						recorder_pause = 1;
-					end
-					S_PLAY: begin
-						dsp_start = 1;
-					end
-					S_PLAYP: begin
-						dsp_pause = 1;
-					end
-				endcase
 			end
 		end
 	endcase
@@ -272,19 +243,17 @@ always_comb begin
 		S_RECD, S_RECDP: begin
 			if (i_key_2) begin		// stop recording
 				state_w = S_IDLE;
-				recorder_stop = 1;
 			end
 		end
 		S_PLAY, S_PLAYP: begin
 			if (i_key_2 || speed_r + addr_play >= addr_end_r) begin		// stop playing
 				state_w = S_IDLE;
-				dsp_stop = 1;
 			end
 		end
 	endcase
 end
 
-always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
+always_ff @(posedge i_clk or negedge i_rst_n) begin
 	if (!i_rst_n) begin
 		state_r 	<= S_INIT;
 		state_des_r <= 0;
@@ -293,7 +262,6 @@ always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
 		i_speed_r 	<= 0;
 		i_inte_r	<= 0;
 		i_fast_r	<= 0;
-		cnt_r		<= 0;
 	end
 	else begin
 		state_r 	<= state_w;
@@ -303,7 +271,6 @@ always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
 		i_speed_r 	<= i_speed;
 		i_inte_r	<= i_inte;
 		i_fast_r	<= i_fast;
-		cnt_r 		<= cnt_w;
 	end
 end
 
