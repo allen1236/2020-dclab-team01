@@ -134,14 +134,17 @@ module tb;
 		stop = 0;
 		#(10*40*CLK);
 
+		$display("=========== sram begin ===========");
+		for( int j=0; j < 32; j++ ) begin
+			$display( "sram[%2d] %16b", j,  sram_storage[j]);
+		end
+		$display("=========== sram end ===========");
+
 		play = 1;
 		#(3*CLK);
 		play = 0;
 		#(20*40*CLK);
 
-		stop = 1;
-		#(3*CLK);
-		stop = 0;
 		#(10*40*CLK);
 		
 		$display("========== finish ===========");
@@ -150,7 +153,7 @@ module tb;
 	end
 
 	initial begin
-		//$monitor("playing: %16b", wm_data_r );
+		$monitor("playing: %16b", wm_data_r );
 		//$monitor("sending: %1b", play_data );
 		//$monitor("state= %1d (%6d)", hex2, $time );
 		//$monitor("input: %1b", recd_data, $time);
@@ -173,17 +176,6 @@ module tb;
 			#(20*CLK);
 		end
 	end
-
-	/*
-	initial begin
-		for (int j=0; j < 8; j++) begin
-			#(5*40*CLK)
-			for( int j=0; j < 32; j++ ) begin
-				$display( "sram[%2d] %16b", j,  sram_storage[j]);
-			end
-		end
-	end
-	*/
 
 	initial begin
 		#(500000*CLK);
