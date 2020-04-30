@@ -284,7 +284,7 @@ end
 
 always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
 	if (!i_rst_n) begin
-		state_r 	<= S_IDLE;
+		state_r 	<= S_INIT;
 		state_des_r <= 0;
 		addr_end_r 	<= 0;
 		speed_r 	<= 0;
