@@ -30,13 +30,6 @@ logic [3:0]		cnt_r, cnt_w;
 assign o_address = addr_r;
 assign o_data 	 = data_r;
 
-initial begin
-	while(1) begin
-		@o_address;
-		//$display("data: %16b", data_r, $time);
-	end
-end
-
 // === Combinational ===
 always_comb begin
 

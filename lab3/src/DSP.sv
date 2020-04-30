@@ -47,6 +47,8 @@ always_comb begin
     prev_data_w = prev_data_r;
     o_data_w = o_data_r;
     cnt_w = cnt_r;
+    o_en_w = o_en_r;
+
 
     // mode change
     if ( i_speed_r == 0 || i_fast_r ) begin
@@ -73,18 +75,18 @@ always_comb begin
                 o_data_w = i_sram_data;
                 o_addr_w = o_addr_r + 1;
             end
-
         end
         S_SLOW1: begin
             if (cnt_r < i_speed_r) begin     // interpolation (1)
                 cnt_w = cnt_r + 1;
-                o_data_w = cnt_r * (i_sram_data - prev_data_r) / (i_speed_r + 1) ;
+                o_data_w = prev_data_r + cnt_r * (i_sram_data - prev_data_r) / (i_speed_r + 1) ;
             end else begin                      // play i_sram_data and change next addr
                 cnt_w = 0;
                 o_data_w = i_sram_data;
                 o_addr_w = o_addr_r + 1;
             end
         end
+        default:;
     endcase
 
     // state switch & common 
@@ -96,11 +98,11 @@ always_comb begin
             o_en_w = 0;
         end
         S_WAIT1: begin // wait for lrc to drop -> en = 1
-            state_w = (!i_daclrck) ? S_WAIT2 : state_w;
+            state_w = (!i_daclrck) ? S_WAIT2 : state_r;
             if (!i_daclrck) begin o_en_w = 1; end
         end
         S_WAIT2: begin // send data, wait for lrc to rise -> calculate
-            state_w = i_daclrck ? mode_r : state_w;
+            state_w = i_daclrck ? mode_r : state_r;
         end
         S_FAST, S_SLOW0, S_SLOW1: begin
             state_w = S_WAIT1;
@@ -114,6 +116,7 @@ always_comb begin
             end
             o_en_w = 0;
         end
+        default:;
     endcase
     if (state_r != S_IDLE) begin
         if (i_pause) begin
