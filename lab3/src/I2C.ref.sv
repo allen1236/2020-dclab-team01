@@ -6,10 +6,10 @@ module I2cInitializer(
 	output o_sclk,
 	output o_sdat,
 	output o_oen, // you are outputing (you are not outputing only when you are "ack"ing.)
-	output [2:0] state
+	output [5:0] o_sev
 );
 
-	assign state = finished_r;
+	assign o_sev = finished_r;
 
 	localparam LLINEIN = 24'b0011_0100_000_0000_0_1001_0111;
 	localparam RLINEIN = 24'b0011_0100_000_0001_0_1001_0111;
@@ -21,6 +21,15 @@ module I2cInitializer(
 	localparam DAIFMT = 24'b0011_0100_000_0111_0_0100_0010;
 	localparam SCTRL = 24'b0011_0100_000_1000_0_0001_1001;
 	localparam ACTRL = 24'b0011_0100_000_1001_0_0000_0001;
+
+
+						24'b0011_0100_000_1111_0_0000_0000,
+						24'b0011_0100_000_0100_0_0001_0101,
+						24'b0011_0100_000_0101_0_0000_0000,
+						24'b0011_0100_000_0110_0_0000_0000,
+						24'b0011_0100_000_0111_0_0100_0010,
+						24'b0011_0100_000_1000_0_0001_1001,
+						24'b0011_0100_000_1001_0_0000_0001
 
 	localparam S_IDLE = 0;
 	localparam S_SEND = 1;

@@ -31,8 +31,7 @@ module Top (
 	output o_AUD_DACDAT,
 
 	// SEVENDECODER (optional display)
-	output [5:0] o_record_time,
-	output [5:0] o_play_time
+	output [23:0] o_sev
 
 	// LCD (optional display)
 	// input        i_clk_800k,
@@ -49,19 +48,17 @@ module Top (
 );
 
 // === params ===
-localparam S_INIT		= 6;
 localparam S_IDLE		= 1;
-localparam S_PLAY       	= 2;
+localparam S_PLAY       = 2;
 localparam S_PLAYP 		= 3;
-localparam S_RECD       	= 4;
+localparam S_RECD       = 4;
 localparam S_RECDP 		= 5;
 localparam S_BUFF		= 0;
 
 // === variables ===
 logic [2:0] 	state_r, state_w, state_des_r, state_des_w;
 logic [19:0]	addr_end_r, addr_end_w;		// the end address of the audio
-logic [2:0]		i_speed_r, speed_r, speed_w;
-logic 			i_inte_r ,i_fast_r;
+logic [2:0]		speed_r, speed_w;
 
 // === output assignments ===
 logic i2c_oen, i2c_sdat;
@@ -69,7 +66,6 @@ logic [19:0] 	addr_record, addr_play;
 logic [15:0] 	data_record, data_play, dac_data;
 
 assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
-
 
 assign o_SRAM_ADDR = (state_r==S_RECD || state_r == S_RECDP) ? addr_record : addr_play;
 assign io_SRAM_DQ  = (state_r==S_RECD || state_r == S_RECDP) ? data_record : 16'dz; // sram_dq as output
@@ -81,9 +77,7 @@ assign o_SRAM_OE_N = 1'b0;
 assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
 
-assign o_record_time = addr_record / 32000;
-assign o_play_time = addr_play / 32000;
-logic [5:0] hex;
+
 // === submodule i/o ===
 
 // i2c
@@ -98,7 +92,13 @@ logic player_en;
 // recorder
 logic recorder_start, recorder_pause, recorder_stop;
 
-// display
+// seven decoder
+logic [5:0] sev0, sev1, sev2, sev3;
+assign sev0 = addr_record / 32000;
+assign sev1 = addr_play / 32000;
+assign sev2 = i2c_finished;
+//assign sev3 = '0;
+assign o_sev = { sev0, sev1, sev2, sev3 };
 
 
 // below is a simple example for module division
@@ -108,13 +108,13 @@ logic recorder_start, recorder_pause, recorder_stop;
 // sequentially sent out settings to initialize WM8731 with I2C protocal
 I2cInitializer init0(
 	.i_rst_n(i_rst_n),
-	.i_clk(i_clk_100K),
+	.i_clk(i_clk_100k),
 	.i_start(1),
 	.o_finished(i2c_finished),
 	.o_sclk(o_I2C_SCLK),
 	.o_sdat(i2c_sdat),
 	.o_oen(i2c_oen), // you are outputing (you are not outputing only when you are "ack"ing.)
-	.o_hex(hex)
+	.o_sev(sev3)
 );
 
 // === AudDSP ===
@@ -122,7 +122,7 @@ I2cInitializer init0(
 // in other words, determine which data addr to be fetch for player 
 AudDSP dsp0(
 	.i_rst_n(i_rst_n),
-	.i_clk(i_AUD_BCLK),
+	.i_clk(i_clk),
 	.i_start(state_r==S_PLAY),
 	.i_pause(state_r==S_PLAYP),
 	.i_stop(state_r==S_IDLE),
@@ -184,7 +184,7 @@ always_comb begin
 
 	// default values
 
-	speed_w = ( i_speed_r >= 1 && i_speed_r <= 8 ) ? i_speed_r-1 : 0;
+	speed_w = ( i_speed >= 1 && i_speed <= 8 ) ? i_speed-1 : 0;
 
 	state_w = state_r;
 	state_des_w = state_des_r;
@@ -192,9 +192,6 @@ always_comb begin
 
 	// rec, play
 	case(state_r)
-		S_INIT: begin
-			state_w =  (i2c_finished) ? S_IDLE : state_w;
-		end
 		S_IDLE: begin
 			if (i_key_0) begin 				// start recording
 				addr_end_w = 0;
@@ -253,24 +250,18 @@ always_comb begin
 	endcase
 end
 
-always_ff @(posedge i_clk or negedge i_rst_n) begin
+always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
 	if (!i_rst_n) begin
-		state_r 	<= S_INIT;
+		state_r 	<= S_IDLE;
 		state_des_r <= 0;
 		addr_end_r 	<= 0;
 		speed_r 	<= 0;
-		i_speed_r 	<= 0;
-		i_inte_r	<= 0;
-		i_fast_r	<= 0;
 	end
 	else begin
 		state_r 	<= state_w;
 		state_des_r <= state_des_w;
 		addr_end_r 	<= addr_end_w;
 		speed_r 	<= speed_w;
-		i_speed_r 	<= i_speed;
-		i_inte_r	<= i_inte;
-		i_fast_r	<= i_fast;
 	end
 end
 
