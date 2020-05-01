@@ -127,8 +127,8 @@ AudDSP dsp0(
 	.i_pause(state_r==S_PLAYP),
 	.i_stop(state_r==S_IDLE),
 	.i_speed(speed_r),
-	.i_fast(i_fast_r),
-	.i_inte(i_inte_r),
+	.i_fast(i_fast),
+	.i_inte(i_inte),
 	.i_daclrck(i_AUD_DACLRCK),
 	.i_sram_data(data_play),
 	.o_dac_data(dac_data),
@@ -176,8 +176,8 @@ Display display0(
 always begin
 	//@o_AUD_DACDAT
 	//$display("output data: %1b", o_AUD_DACDAT, $time);
-	@o_SRAM_ADDR;
-	$display("end address: %2d, addr_play: %2d, sram_addr: %2d", addr_end_r, addr_play, o_SRAM_ADDR);
+	//@o_SRAM_ADDR;
+	//$display("end address: %2d, addr_play: %2d, sram_addr: %2d", addr_end_r, addr_play, o_SRAM_ADDR);
 end
 
 always_comb begin

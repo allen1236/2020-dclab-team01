@@ -20,7 +20,6 @@ logic [19:0] o_addr_r, o_addr_w;
 logic signed [15:0] prev_data_r, prev_data_w;
 logic [15:0] o_data_r, o_data_w;
 logic [3:0] cnt_r, cnt_w;
-logic [2:0] i_speed_r, i_fast_r, i_inte_r;
 
 localparam S_IDLE  = 0;
 localparam S_FAST  = 2;
@@ -56,16 +55,21 @@ always_comb begin
     case(state_r)
         S_FAST: begin
             prev_data_w = i_sram_data;
-            o_addr_w = o_addr_r + 1 + i_speed_r;
+            o_addr_w = o_addr_r + 1 + i_speed;
             o_data_w = i_sram_data;
         end
         S_SLOW: begin
             if (cnt_r < i_speed) begin
                 cnt_w = cnt_r + 1;
-                   o_data_w = prev_data_r + i_inte ? (cnt_r+1) * (i_sram_data - prev_data_r) / (i_speed+1) : 0;
+                if ( i_inte ) begin
+                    o_data_w = prev_data_r + $signed(i_sram_data - prev_data_r) * (cnt_r+1) / (i_speed+1);
+                end else begin
+                    o_data_w = prev_data_r;
+                end
             end else begin                      // play i_sram_data and change next addr
                 cnt_w = 0;
                 o_data_w = i_sram_data;
+                prev_data_w = i_sram_data;
                 o_addr_w = o_addr_r + 1;
             end
         end

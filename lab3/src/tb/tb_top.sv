@@ -6,6 +6,8 @@ module tb;
 	localparam NUM_BYTE = 14;
 	logic clk;
 
+	localparam SRAM_SIZE = 1024;
+
 	initial clk = 0;
 	always #HCLK clk = ~clk;
 
@@ -16,11 +18,11 @@ module tb;
 	int sram_addr;
 	logic [15:0] sram_data;
 	logic sram_write;
-	int sram_storage[64];
+	int sram_storage[SRAM_SIZE];
 
 	logic recd_data, play_data, lrc;
 	logic [5:0] recd_time, play_time;
-	logic [15:0] wm_data, wm_data_r;
+	logic signed [15:0] wm_data, wm_data_r, wm_data_last;
 
 	wire [15:0] sram_data_w;
 	wire lrc_w, clk_w;
@@ -31,7 +33,7 @@ module tb;
 
 	wire null_logic;
 
-	int a;
+	logic [15:0] a;
 
 
 	Top top0(
@@ -66,7 +68,7 @@ module tb;
 		.o_AUD_DACDAT(play_data),
 
 		// SEVENDECODER (optional display)
-		.o_sev(sev),
+		.o_sev(sev)
 
 		// LCD (optional display)
 		// .i_clk_800k(CLK_800K),
@@ -83,15 +85,17 @@ module tb;
 	);
 
 	task wm8731();
+		a = 0;
 		while (1) begin
 			@(negedge lrc)
 			#(CLK);
 			for ( int j = 0; j < 16; j++ ) begin
-				recd_data = ( j == 0 || j == 15 || j == a ) ? 1 : 0;
+				recd_data = a[15-j];
 				wm_data[15-j] = play_data;
 				#(CLK);
 			end
-			a = (a == 14)  ? 1 : a+1;
+			a =  a + 16'h0800;
+			wm_data_last = wm_data_r;
 			wm_data_r = wm_data;
 		end
 	endtask
@@ -114,9 +118,9 @@ module tb;
 		#(2*CLK);
 		rst_n = 1;
 		#(1*CLK);
-		spd = 0;
+		spd = 5;
 		fast = 0;
-		inte = 0;
+		inte = 1;
 		#(2*CLK);
 
 		@(posedge clk)
@@ -127,14 +131,14 @@ module tb;
 		recd = 1;
 		#(3*CLK);
 		recd = 0;
-		#(20*40*CLK);
+		#(200*40*CLK);
 		stop = 1;
 		#(3*CLK);
 		stop = 0;
 		#(10*40*CLK);
 
 		$display("=========== sram begin ===========");
-		for( int j=0; j < 32; j++ ) begin
+		for( int j=0; j < SRAM_SIZE; j++ ) begin
 			$display( "sram[%2d] %16b", j,  sram_storage[j]);
 		end
 		$display("=========== sram end ===========");
@@ -144,7 +148,7 @@ module tb;
 		play = 0;
 		#(20*40*CLK);
 
-		#(10*40*CLK);
+		#(800*40*CLK);
 		
 		$display("========== finish ===========");
 
@@ -152,7 +156,7 @@ module tb;
 	end
 
 	initial begin
-		$monitor("playing: %16b", wm_data_r );
+		$monitor("%6d: %4d (%4d)",$time/40, wm_data_r, wm_data_r - wm_data_last );
 		//$monitor("sending: %1b", play_data );
 		//$monitor("state= %1d (%6d)", hex2, $time );
 		//$monitor("input: %1b", recd_data, $time);
@@ -167,7 +171,6 @@ module tb;
 	end
 
 	initial begin
-		@(negedge clk)
 		while (1) begin
 			lrc = 1;
 			#(20*CLK);
