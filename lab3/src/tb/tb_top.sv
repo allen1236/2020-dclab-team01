@@ -24,7 +24,7 @@ module tb;
 
 	wire [15:0] sram_data_w;
 	wire lrc_w, clk_w;
-	wire [5:0] hex1, hex2;
+	wire [23:0] sev;
 	assign lrc_w = lrc;
 	assign clk_w = clk;
 	assign sram_data_w = (sram_write) ? sram_data :'z;
@@ -66,8 +66,7 @@ module tb;
 		.o_AUD_DACDAT(play_data),
 
 		// SEVENDECODER (optional display)
-		.o_record_time(hex1),
-		.o_play_time(hex2)
+		.o_sev(sev),
 
 		// LCD (optional display)
 		// .i_clk_800k(CLK_800K),

@@ -140,8 +140,8 @@ always_comb begin
 				data_w = i_dac_data;
 			end
 			S_SEND: begin
-				state_w = (cnt_r == 15) ? S_WAIT_1 : state_w;
 				cnt_w = (cnt_r == 15) ? 0 : cnt_r + 1;
+				state_w = (cnt_r == 15) ? S_WAIT_1 : state_w;
 				data_w = data_r << 1;
 			end
 		endcase
