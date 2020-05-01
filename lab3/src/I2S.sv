@@ -110,6 +110,7 @@ module AudPlayer(
 // === params ===
 localparam S_WAIT_1 = 1;
 localparam S_WAIT_2 = 2;
+localparam S_BUFF = 3;
 localparam S_SEND = 0;
 
 // === variables ===
@@ -133,16 +134,22 @@ always_comb begin
 		case(state_r)
 			S_WAIT_1: begin		// wait for lrc to rise
 				state_w = ( i_daclrck == 1 ) ? S_WAIT_2 : state_w;
+				
 			end
 			S_WAIT_2: begin		// wait for lrc to drop
-				state_w = ( i_daclrck == 0 ) ? S_SEND : state_w;
-				cnt_w = 0;
-				data_w = i_dac_data;
+				if ( i_daclrck == 0 ) begin
+					state_w = S_SEND;
+					cnt_w = 0;
+					data_w = i_dac_data;
+				end
+			end
+			S_BUFF: begin
+				state_w = S_SEND;
 			end
 			S_SEND: begin
 				cnt_w = (cnt_r == 15) ? 0 : cnt_r + 1;
 				state_w = (cnt_r == 15) ? S_WAIT_1 : state_w;
-				data_w = data_r << 1;
+				data_w = (cnt_r == 15) ? 0 : data_r << 1;
 			end
 		endcase
 	end else begin
