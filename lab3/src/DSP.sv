@@ -8,7 +8,7 @@ module AudDSP(
     input           i_fast,			// 1 -> fast, 0 -> slow
     input           i_inte,			// 1 or 0 order interpolation
     input           i_daclrck,		
-    input [15:0]    i_sram_data,	// the 16-bit data stored in sram
+    input signed [15:0] i_sram_data,	// the 16-bit data stored in sram
 	output [15:0]	o_dac_data,		// AudPlayer will send this data to wm8731
 	output [19:0]	o_sram_addr,	// sram address
     output          o_player_en		// enable AudPlayer
@@ -17,15 +17,14 @@ module AudDSP(
 logic o_en_r, o_en_w;
 logic [3:0]  state_r, state_w, mode_w, mode_r;
 logic [19:0] o_addr_r, o_addr_w;
-logic [15:0] prev_data_r, prev_data_w;
+logic signed [15:0] prev_data_r, prev_data_w;
 logic [15:0] o_data_r, o_data_w;
 logic [3:0] cnt_r, cnt_w;
 logic [2:0] i_speed_r, i_fast_r, i_inte_r;
 
 localparam S_IDLE  = 0;
 localparam S_FAST  = 2;
-localparam S_SLOW0  = 3;
-localparam S_SLOW1  = 1;
+localparam S_SLOW  = 1;
 localparam S_WAIT1 = 4; // lrc = 0
 localparam S_WAIT2 = 5; // lrc = 1
 localparam S_BUFF  = 6; // BUF for 1 clk hold; 
@@ -51,13 +50,7 @@ always_comb begin
 
 
     // mode change
-    if ( i_speed_r == 0 || i_fast_r ) begin
-        mode_w = S_FAST;
-    end else if ( i_inte_r ) begin
-        mode_w = S_SLOW1;
-    end else begin
-        mode_w = S_SLOW0;
-    end
+    mode_w = (i_fast) ? S_FAST : S_SLOW;
 
     // signal processing
     case(state_r)
@@ -66,27 +59,16 @@ always_comb begin
             o_addr_w = o_addr_r + 1 + i_speed_r;
             o_data_w = i_sram_data;
         end
-        S_SLOW0: begin
-            if (cnt_r < i_speed_r) begin     // interpolation (0)
+        S_SLOW: begin
+            if (cnt_r < i_speed) begin
                 cnt_w = cnt_r + 1;
-                o_data_w = prev_data_r;
+                   o_data_w = prev_data_r + i_inte ? (cnt_r+1) * (i_sram_data - prev_data_r) / (i_speed+1) : 0;
             end else begin                      // play i_sram_data and change next addr
                 cnt_w = 0;
                 o_data_w = i_sram_data;
                 o_addr_w = o_addr_r + 1;
             end
         end
-        S_SLOW1: begin
-            if (cnt_r < i_speed_r) begin     // interpolation (1)
-                cnt_w = cnt_r + 1;
-                o_data_w = prev_data_r + cnt_r * (i_sram_data - prev_data_r) / (i_speed_r + 1) ;
-            end else begin                      // play i_sram_data and change next addr
-                cnt_w = 0;
-                o_data_w = i_sram_data;
-                o_addr_w = o_addr_r + 1;
-            end
-        end
-        default:;
     endcase
 
     // state switch & common 
@@ -104,7 +86,7 @@ always_comb begin
         S_WAIT2: begin // send data, wait for lrc to rise -> calculate
             state_w = i_daclrck ? mode_r : state_r;
         end
-        S_FAST, S_SLOW0, S_SLOW1: begin
+        S_FAST, S_SLOW: begin
             state_w = S_WAIT1;
         end
         S_PAUS: begin
@@ -132,9 +114,6 @@ end
 
 always_ff @(posedge i_clk or negedge i_rst_n ) begin
     if(!i_rst_n) begin
-        i_speed_r   <= 0;
-        i_fast_r    <= 0;
-        i_inte_r    <= 0;
         state_r     <= S_IDLE;
         mode_r      <= 0;
         o_addr_r    <= 0;
@@ -143,11 +122,6 @@ always_ff @(posedge i_clk or negedge i_rst_n ) begin
         cnt_r       <= 0;
         o_en_r      <= 0;
     end else begin
-        if (state_r == S_WAIT2) begin   // change speed settings only in S_WAIT2
-            i_speed_r   <= i_speed;
-            i_fast_r    <= i_fast;
-            i_inte_r    <= i_inte;
-        end
         state_r     <= state_w;
         mode_r      <= mode_w;
         o_addr_r    <= o_addr_w;
