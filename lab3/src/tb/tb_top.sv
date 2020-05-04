@@ -27,6 +27,7 @@ module tb;
 	wire [15:0] sram_data_w;
 	wire lrc_w, clk_w;
 	wire [23:0] sev;
+	logic [24:0] volume;
 	assign lrc_w = lrc;
 	assign clk_w = clk;
 	assign sram_data_w = (sram_write) ? sram_data :'z;
@@ -68,7 +69,7 @@ module tb;
 		.o_AUD_DACDAT(play_data),
 
 		// SEVENDECODER (optional display)
-		.o_sev(sev)
+		.o_sev(sev),
 
 		// LCD (optional display)
 		// .i_clk_800k(CLK_800K),
@@ -80,8 +81,7 @@ module tb;
 		// .o_LCD_BLON(LCD_BLON),
 
 		// LED
-		// .o_ledg(LEDG), // [8:0]
-		// .o_ledr(LEDR) // [17:0]
+		.o_volume(volume)
 	);
 
 	task wm8731();
@@ -94,7 +94,7 @@ module tb;
 				wm_data[15-j] = play_data;
 				#(CLK);
 			end
-			a =  a + 16'h0800;
+			a =  a + 16'h0100;
 			wm_data_last = wm_data_r;
 			wm_data_r = wm_data;
 		end
@@ -119,7 +119,7 @@ module tb;
 		rst_n = 1;
 		#(1*CLK);
 		spd = 5;
-		fast = 0;
+		fast = 1;
 		inte = 1;
 		#(2*CLK);
 
@@ -132,23 +132,38 @@ module tb;
 		#(3*CLK);
 		recd = 0;
 		#(200*40*CLK);
+		recd = 1;
+		#(3*CLK);
+		recd = 0;
+		#(100*40*CLK);
+		recd = 1;
+		#(3*CLK);
+		recd = 0;
+		#(200*40*CLK);
+
 		stop = 1;
 		#(3*CLK);
 		stop = 0;
-		#(10*40*CLK);
+		#(300*40*CLK);
 
 		$display("=========== sram begin ===========");
-		for( int j=0; j < SRAM_SIZE; j++ ) begin
-			$display( "sram[%2d] %16b", j,  sram_storage[j]);
-		end
+		//for( int j=0; j < SRAM_SIZE; j++ ) begin
+		//	$display( "sram[%2d] %16b", j,  sram_storage[j]);
+		//end
 		$display("=========== sram end ===========");
 
 		play = 1;
 		#(3*CLK);
 		play = 0;
-		#(20*40*CLK);
-
-		#(800*40*CLK);
+		#(50*40*CLK);
+		play = 1;
+		#(3*CLK);
+		play = 0;
+		#(400*40*CLK);
+		play = 1;
+		#(3*CLK);
+		play = 0;
+		#(400*40*CLK);
 		
 		$display("========== finish ===========");
 
@@ -156,7 +171,8 @@ module tb;
 	end
 
 	initial begin
-		$monitor("%6d: %4d (%4d)",$time/40, wm_data_r, wm_data_r - wm_data_last );
+		//$monitor("%6d: %4d (%4d)",$time/40, wm_data_r, wm_data_r - wm_data_last );
+		$monitor("%6d -- %25b", $time, volume);
 		//$monitor("sending: %1b", play_data );
 		//$monitor("state= %1d (%6d)", hex2, $time );
 		//$monitor("input: %1b", recd_data, $time);

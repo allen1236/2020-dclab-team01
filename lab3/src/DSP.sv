@@ -15,7 +15,7 @@ module AudDSP(
 );
 
 logic o_en_r, o_en_w;
-logic [3:0]  state_r, state_w, mode_w, mode_r;
+logic [3:0]  state_r, state_w;
 logic [19:0] o_addr_r, o_addr_w;
 logic signed [15:0] prev_data_r, prev_data_w;
 logic [15:0] o_data_r, o_data_w;
@@ -26,9 +26,6 @@ localparam S_FAST  = 2;
 localparam S_SLOW  = 1;
 localparam S_WAIT1 = 4; // lrc = 0
 localparam S_WAIT2 = 5; // lrc = 1
-localparam S_BUFF  = 6; // BUF for 1 clk hold; 
-localparam S_PAUS  = 7; 
-localparam S_RUN   = 8;
 
 // ouput assignments
 
@@ -46,10 +43,6 @@ always_comb begin
     o_data_w = o_data_r;
     cnt_w = cnt_r;
     o_en_w = o_en_r;
-
-
-    // mode change
-    mode_w = (i_fast) ? S_FAST : S_SLOW;
 
     // signal processing
     case(state_r)
@@ -78,48 +71,29 @@ always_comb begin
     // state switch & common 
     case(state_r)
         S_IDLE: begin // stop || rst_n
-            if(i_start) begin // play key is pressed
-                state_w = (i_daclrck) ? mode_r : S_WAIT2 ;
-            end
+            if (i_start) state_w = S_WAIT2;
             o_en_w = 0;
+            o_data_w = 0;
         end
         S_WAIT1: begin // wait for lrc to drop -> en = 1
             state_w = (!i_daclrck) ? S_WAIT2 : state_r;
-            if (!i_daclrck) begin o_en_w = 1; end
+            if (!i_daclrck) o_en_w = 1;
         end
         S_WAIT2: begin // send data, wait for lrc to rise -> calculate
-            state_w = i_daclrck ? mode_r : state_r;
+            if ( i_daclrck ) state_w = i_fast ? S_FAST : S_SLOW;
         end
         S_FAST, S_SLOW: begin
             state_w = S_WAIT1;
         end
-        S_PAUS: begin
-            if (i_start) begin
-                state_w = mode_r;
-            end else if (i_stop) begin
-                state_w = S_IDLE;
-                o_addr_w = 0;
-            end
-            o_en_w = 0;
-        end
-        default:;
     endcase
-    if (state_r != S_IDLE) begin
-        if (i_pause) begin
-            state_w = S_PAUS;
-        end else if (i_stop) begin
-            state_w = S_IDLE;
-            o_addr_w = 0;
-            o_data_w = 0;
-            o_en_w = 0;
-        end
-    end
+
+    if ( i_pause || i_stop ) state_w = S_IDLE;
+    if ( i_stop ) o_addr_w = 0;
 end
 
 always_ff @(posedge i_clk or negedge i_rst_n ) begin
     if(!i_rst_n) begin
         state_r     <= S_IDLE;
-        mode_r      <= 0;
         o_addr_r    <= 0;
         prev_data_r <= 0;
         o_data_r    <= 0;
@@ -127,7 +101,6 @@ always_ff @(posedge i_clk or negedge i_rst_n ) begin
         o_en_r      <= 0;
     end else begin
         state_r     <= state_w;
-        mode_r      <= mode_w;
         o_addr_r    <= o_addr_w;
         prev_data_r <= prev_data_w;
         o_data_r    <= o_data_w;

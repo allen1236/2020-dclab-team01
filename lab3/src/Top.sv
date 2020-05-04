@@ -31,7 +31,7 @@ module Top (
 	output o_AUD_DACDAT,
 
 	// SEVENDECODER (optional display)
-	output [23:0] o_sev
+	output [23:0] o_sev,
 
 	// LCD (optional display)
 	// input        i_clk_800k,
@@ -43,8 +43,7 @@ module Top (
 	// output       o_LCD_BLON,
 
 	// LED
-	// output  [8:0] o_ledg,
-	// output [17:0] o_ledr
+	output [25:0]	o_volume
 );
 
 // === params ===
@@ -54,11 +53,20 @@ localparam S_PLAYP 		= 3;
 localparam S_RECD       = 4;
 localparam S_RECDP 		= 5;
 localparam S_BUFF		= 0;
+localparam S_INIT		= 6;
+
+localparam VOLUME_DROP = 16'd20000;
+localparam VOLUME_BAR  = 56'b11111111111111111111111110000000000000000000000000000000;
 
 // === variables ===
 logic [2:0] 	state_r, state_w, state_des_r, state_des_w;
 logic [19:0]	addr_end_r, addr_end_w;		// the end address of the audio
 logic [2:0]		speed_r, speed_w;
+
+logic [15:0]	cnt_r, cnt_w;
+logic [4:0]		max_r, max_w;
+logic signed [15:0] 	volume_data;
+logic [15:0] 	volume;
 
 // === output assignments ===
 logic i2c_oen, i2c_sdat;
@@ -70,6 +78,8 @@ assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 assign o_SRAM_ADDR = (state_r==S_RECD || state_r == S_RECDP) ? addr_record : addr_play;
 assign io_SRAM_DQ  = (state_r==S_RECD || state_r == S_RECDP) ? data_record : 16'dz; // sram_dq as output
 assign data_play   = (state_r==S_RECD || state_r == S_RECDP) ? 16'd0 : io_SRAM_DQ; // sram_dq as input
+assign volume_data = ( state_r == S_RECD ) ? data_record : dac_data;
+assign volume = ( volume_data > 0 ) ?  volume_data : (-volume_data);
 
 assign o_SRAM_WE_N = (state_r==S_RECD || state_r == S_RECDP) ? 1'b0 : 1'b1;
 assign o_SRAM_CE_N = 1'b0;
@@ -99,6 +109,7 @@ assign sev1 = addr_play / 32000;
 assign sev2 = i2c_finished;
 //assign sev3 = '0;
 assign o_sev = { sev0, sev1, sev2, sev3 };
+assign o_volume = VOLUME_BAR[max_r+:25];
 
 
 // below is a simple example for module division
@@ -181,6 +192,14 @@ always begin
 end
 
 always_comb begin
+	cnt_w = (cnt_r >= VOLUME_DROP) ? 0 : cnt_r + 1;
+	if ( volume[14:10] > max_r ) max_w = volume[14:10];
+	else if (cnt_r >= VOLUME_DROP) max_w = max_r - 1;
+	else max_w = max_r;
+end
+
+
+always_comb begin
 
 	// default values
 
@@ -192,6 +211,11 @@ always_comb begin
 
 	// rec, play
 	case(state_r)
+		S_INIT: begin
+			if (i2c_finished) begin
+				state_w = S_IDLE;
+			end
+		end
 		S_IDLE: begin
 			if (i_key_0) begin 				// start recording
 				addr_end_w = 0;
@@ -252,16 +276,20 @@ end
 
 always_ff @(posedge i_AUD_BCLK or negedge i_rst_n) begin
 	if (!i_rst_n) begin
-		state_r 	<= S_IDLE;
+		state_r 	<= S_INIT;
 		state_des_r <= 0;
 		addr_end_r 	<= 0;
 		speed_r 	<= 0;
+		cnt_r 		<= 0;
+		max_r		<= 0;
 	end
 	else begin
 		state_r 	<= state_w;
 		state_des_r <= state_des_w;
 		addr_end_r 	<= addr_end_w;
 		speed_r 	<= speed_w;
+		cnt_r		<= cnt_w;
+		max_r		<= max_w;
 	end
 end
 

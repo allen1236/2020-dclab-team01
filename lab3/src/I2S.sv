@@ -18,7 +18,6 @@ localparam S_READ = 1;
 localparam S_SAVE = 2;
 localparam S_WAIT_1 = 3;
 localparam S_WAIT_2 = 4;
-localparam S_BUFF = 5;
 
 // === Variables ===
 logic [2:0]		state_r, state_w;
@@ -42,7 +41,7 @@ always_comb begin
 	case(state_r)
 		S_IDLE: begin
 			if ( i_start ) begin
-				state_w = S_WAIT_1;
+				state_w = (i_lrc) ? S_WAIT_2 : S_WAIT_1;
 				addr_w = 0;
 			end
 		end
@@ -53,11 +52,6 @@ always_comb begin
 			if ( i_lrc == 0 ) begin state_w = S_READ; end
 			cnt_w = 0;
 		end
-		/*
-		S_BUFF: begin		// wait a cycle
-			state_w = S_READ;
-		end
-		*/
 		S_READ: begin		// read 16 bits
 			data_w = { data_r[14:0], i_data };
 			cnt_w = ( cnt_r == 15 ) ? 0 : cnt_r + 1;
@@ -66,6 +60,7 @@ always_comb begin
 		S_SAVE: begin		// change address
 			addr_w = addr_r + 1;
 			state_w = S_WAIT_1;
+			data_w = 0;
 			//$display("addr= %5x, data= %16b", addr_r, data_r);
 		end
 	endcase
@@ -108,18 +103,17 @@ module AudPlayer(
 );
 
 // === params ===
-localparam S_WAIT_1 = 1;
-localparam S_WAIT_2 = 2;
-localparam S_BUFF = 3;
+localparam S_WAIT = 1;
 localparam S_SEND = 0;
 
 // === variables ===
 logic [1:0]		state_r, state_w;
 logic [15:0]	data_r, data_w;
 logic [3:0]		cnt_r, cnt_w;
+logic 			lrc_r;
 
 // === output assignment ===
-assign o_aud_dacdat = data_r[15];
+assign o_aud_dacdat = data_r[cnt_r];
 
 // === combinational ===
 
@@ -132,28 +126,20 @@ always_comb begin
 
 	if ( i_en ) begin
 		case(state_r)
-			S_WAIT_1: begin		// wait for lrc to rise
-				state_w = ( i_daclrck == 1 ) ? S_WAIT_2 : state_w;
-				
-			end
-			S_WAIT_2: begin		// wait for lrc to drop
-				if ( i_daclrck == 0 ) begin
+			S_WAIT: begin		// wait for lrc to rise
+				if ( i_daclrck != lrc_r ) begin
 					state_w = S_SEND;
-					cnt_w = 0;
-					data_w = i_dac_data;
+					data_w = ( i_daclrck ) ? data_r : i_dac_data;
+					cnt_w = 15;
 				end
 			end
-			S_BUFF: begin
-				state_w = S_SEND;
-			end
 			S_SEND: begin
-				cnt_w = (cnt_r == 15) ? 0 : cnt_r + 1;
-				state_w = (cnt_r == 15) ? S_WAIT_1 : state_w;
-				data_w = (cnt_r == 15) ? 0 : data_r << 1;
+				state_w = (cnt_r == 0) ? S_WAIT : state_w;
+				cnt_w = (cnt_r == 0) ? 15 : cnt_r - 1;
 			end
 		endcase
 	end else begin
-		state_w = S_WAIT_1;
+		state_w = S_WAIT;
 	end
 end
 
@@ -163,11 +149,13 @@ always_ff @(posedge i_bclk or negedge i_rst_n) begin
 	if ( !i_rst_n ) begin
 		cnt_r <= 0;
 		data_r <= 0;
-		state_r <= S_WAIT_2;
+		lrc_r <= 0;
+		state_r <= S_WAIT;
 	end else begin
 		cnt_r <= cnt_w;
 		data_r <= data_w;
 		state_r <= state_w;
+		lrc_r <= i_daclrck;
 	end
 end
 
