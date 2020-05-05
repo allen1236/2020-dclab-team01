@@ -31,7 +31,7 @@ module Top (
 	output o_AUD_DACDAT,
 
 	// SEVENDECODER (optional display)
-	output [23:0] o_sev,
+	output [23:0] 	o_sev,
 
 	// LCD (optional display)
 	// input        i_clk_800k,
@@ -55,9 +55,10 @@ localparam S_RECDP 		= 5;
 localparam S_BUFF		= 0;
 localparam S_INIT		= 6;
 
-localparam VOLUME_DROP = 16'd20000;
-localparam VOLUME_BAR  = 56'b11111111111111111111111110000000000000000000000000000000;
-
+localparam VOLUME_DROP = 16'b1 << 14;
+localparam VOLUME_BAR  = 56'b11111111111111111111111111000000000000000000000000000000;
+//localparam VOLUME_BAR  = {{26{1'b1}}, 30'b0};
+ 
 // === variables ===
 logic [2:0] 	state_r, state_w, state_des_r, state_des_w;
 logic [19:0]	addr_end_r, addr_end_w;		// the end address of the audio
@@ -78,8 +79,8 @@ assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
 assign o_SRAM_ADDR = (state_r==S_RECD || state_r == S_RECDP) ? addr_record : addr_play;
 assign io_SRAM_DQ  = (state_r==S_RECD || state_r == S_RECDP) ? data_record : 16'dz; // sram_dq as output
 assign data_play   = (state_r==S_RECD || state_r == S_RECDP) ? 16'd0 : io_SRAM_DQ; // sram_dq as input
-assign volume_data = ( state_r == S_RECD ) ? data_record : dac_data;
-assign volume = ( volume_data > 0 ) ?  volume_data : (-volume_data);
+assign volume_data = ( state_r != S_PLAY ) ? data_record : dac_data;
+assign volume = ( volume_data >= 0 ) ?  volume_data : (-volume_data);
 
 assign o_SRAM_WE_N = (state_r==S_RECD || state_r == S_RECDP) ? 1'b0 : 1'b1;
 assign o_SRAM_CE_N = 1'b0;
@@ -104,11 +105,12 @@ logic recorder_start, recorder_pause, recorder_stop;
 
 // seven decoder
 logic [5:0] sev0, sev1, sev2, sev3;
-assign sev0 = addr_record / 32000;
-assign sev1 = addr_play / 32000;
-assign sev2 = i2c_finished;
-//assign sev3 = '0;
+assign sev0 = {1'b0, addr_record[19:15]};
+assign sev1 = {1'b0, addr_play[19:15]};
+assign sev2 = i_inte * 6'd10 + i_fast;
+assign sev3 = speed_r + 1;
 assign o_sev = { sev0, sev1, sev2, sev3 };
+
 assign o_volume = VOLUME_BAR[max_r+:25];
 
 
@@ -124,8 +126,7 @@ I2cInitializer init0(
 	.o_finished(i2c_finished),
 	.o_sclk(o_I2C_SCLK),
 	.o_sdat(i2c_sdat),
-	.o_oen(i2c_oen), // you are outputing (you are not outputing only when you are "ack"ing.)
-	.o_sev(sev3)
+	.o_oen(i2c_oen) // you are outputing (you are not outputing only when you are "ack"ing.)
 );
 
 // === AudDSP ===
@@ -194,7 +195,7 @@ end
 always_comb begin
 	cnt_w = (cnt_r >= VOLUME_DROP) ? 0 : cnt_r + 1;
 	if ( volume[14:10] > max_r ) max_w = volume[14:10];
-	else if (cnt_r >= VOLUME_DROP) max_w = max_r - 1;
+	else if (cnt_r >= VOLUME_DROP && max_r > 0) max_w = max_r - 1;
 	else max_w = max_r;
 end
 
@@ -262,7 +263,7 @@ always_comb begin
 	// stop
 	case(state_r)
 		S_RECD, S_RECDP: begin
-			if (i_key_2) begin		// stop recording
+			if (i_key_2 || addr_record == 20'b11111111111111111110 ) begin		// stop recording
 				state_w = S_IDLE;
 			end
 		end

@@ -205,7 +205,7 @@ Top top0(
 	.o_AUD_DACDAT(AUD_DACDAT),
 
 	// SEVENDECODER (optional display)
-	.o_sev(sev)
+	.o_sev(sev),
 
 	// LCD (optional display)
 	// .i_clk_800k(CLK_800K),
@@ -217,34 +217,33 @@ Top top0(
 	// .o_LCD_BLON(LCD_BLON),
 
 	// LED
-	.o_volume( {LEDR, LEDG} )
+	.o_volume( {LEDR[17:0], LEDG[7:0]} )
 );
 
 SevenHexDecoder seven_dec0(
-	.i_hex(sev[5:0]),
-	.o_seven_ten(HEX1),
- 	.o_seven_one(HEX0)
+	.i_hex(sev[17:12]),
+	.o_seven_ten(HEX5),
+ 	.o_seven_one(HEX4)
 );
 
 SevenHexDecoder seven_dec1(
- 	.i_hex(sev[11:6]),
- 	.o_seven_ten(HEX3),
-  	.o_seven_one(HEX2)
-);
-
-SevenHexDecoder seven_dec2(
- 	.i_hex(sev[17:12]),
- 	.o_seven_ten(HEX5),
-  	.o_seven_one(HEX4)
-);
-
-SevenHexDecoder seven_dec3(
  	.i_hex(sev[23:18]),
  	.o_seven_ten(HEX7),
   	.o_seven_one(HEX6)
 );
 
+SevenHexDecoder seven_dec2(
+ 	.i_hex(sev[11:6]),
+ 	.o_seven_ten(HEX3),
+  	.o_seven_one(HEX2)
+);
+
+SevenHexDecoder seven_dec3(
+ 	.i_hex(sev[5:0]),
+ 	.o_seven_ten(HEX1),
+  	.o_seven_one(HEX0)
+);
+
 
 // comment those are use for display
-
 endmodule

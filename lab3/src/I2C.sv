@@ -7,8 +7,7 @@ module I2cInitializer(
     output o_finished, //
     output o_sclk,    
     output o_sdat,    
-    output o_oen,     // for every 8-bit data sent
-    output [5:0] o_sev
+    output o_oen     // for every 8-bit data sent
 );
 
 
@@ -39,7 +38,6 @@ assign o_finished = o_finished_r;
 assign o_oen = ~ack_r;
 assign o_sclk = o_sclk_r;
 assign o_sdat = o_sdat_r;
-assign o_sev = state_r;
 
 
 /* combinational */

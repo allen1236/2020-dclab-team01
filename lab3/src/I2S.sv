@@ -27,7 +27,7 @@ logic [3:0]		cnt_r, cnt_w;
 
 // === Output Assignment ===
 assign o_address = addr_r;
-assign o_data 	 = data_r;
+assign o_data 	 = (state_r == S_SAVE) ? data_r : '0;
 
 // === Combinational ===
 always_comb begin
@@ -60,7 +60,6 @@ always_comb begin
 		S_SAVE: begin		// change address
 			addr_w = addr_r + 1;
 			state_w = S_WAIT_1;
-			data_w = 0;
 			//$display("addr= %5x, data= %16b", addr_r, data_r);
 		end
 	endcase
@@ -113,7 +112,7 @@ logic [3:0]		cnt_r, cnt_w;
 logic 			lrc_r;
 
 // === output assignment ===
-assign o_aud_dacdat = data_r[cnt_r];
+assign o_aud_dacdat = ( state_r == S_SEND ) ? data_r[cnt_r] : 0;
 
 // === combinational ===
 
